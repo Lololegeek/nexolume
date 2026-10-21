@@ -1,58 +1,58 @@
-# Commandes et deltas, protocole 1
+# Commands and deltas, protocol 1
 
 ```json
 {"protocol":1,"document":"opaque-document-id","expected_revision":3,"command":"SetCell","params":{"address":"A1","input":"=10+20"}}
 ```
 
-Le protocole, le nom de commande, les types de paramètres et les règles propres à l’éditeur sont validés en Rust. Les commandes de mutation exigent la révision courante. `CreateDocument`, `OpenDocument`, `Snapshot` et `CloseDocument` n’exigent pas de révision attendue.
+The protocol, command name, parameter types and editor-specific rules are validated in Rust. Mutation commands require the current revision. `CreateDocument`, `OpenDocument`, `Snapshot` and `CloseDocument` do not require an expected revision.
 
-| Commande | Paramètres |
+| Command | Parameters |
 |---|---|
-| Ping | aucun |
-| CreateDocument | kind : writer / sheets / slides, title |
-| OpenDocument | json : contenu du fichier |
-| Snapshot / CloseDocument | document dans l’enveloppe |
-| SaveDocument | document et expected_revision ; renvoie la sérialisation, C# écrit le fichier |
+| Ping | none |
+| CreateDocument | kind: writer / sheets / slides, title |
+| OpenDocument | json: file content |
+| Snapshot / CloseDocument | document in the envelope |
+| SaveDocument | document and expected_revision; returns the serialisation, C# writes the file |
 | RenameDocument | title |
-| Undo / Redo | aucun paramètre |
-| Batch | commands : tableau de {command, params} ; une révision et une entrée d’historique |
-| SetParagraph | id, text et/ou style, runs, image et/ou table facultatifs ; group facultatif pour la frappe |
-| InsertParagraph | id, index, text, style facultatif |
+| Undo / Redo | no parameters |
+| Batch | commands: array of {command, params}; one revision and one history entry |
+| SetParagraph | id, text and/or style, optional runs, image and/or table; optional group for typing |
+| InsertParagraph | id, index, text, optional style |
 | DeleteParagraph | id |
-| SetCell | address, input ; input vide efface la cellule, préfixe = pour une formule |
-| AddSlide | id, index facultatif ; slide complet réservé notamment à la restauration |
+| SetCell | address, input; an empty input clears the cell, a `=` prefix marks a formula |
+| AddSlide | id, optional index; full slide reserved notably for restoration |
 | DeleteSlide | id |
-| AddObject | slide, object, index facultatif |
+| AddObject | slide, object, optional index |
 | DeleteObject | slide, id |
-| UpdateObject / MoveObject / ResizeObject / UpdateObjectText | slide, id et propriétés à remplacer |
-| UpdateSlide | id, puis background (#RRGGBB), notes, transition (none, fade, slide) |
+| UpdateObject / MoveObject / ResizeObject / UpdateObjectText | slide, id and the properties to replace |
+| UpdateSlide | id, then background (#RRGGBB), notes, transition (none, fade, slide) |
 
-Style Writer : bold, italic, underline, font_family, font_size (6–96), alignment (left / center / right). Objet Slides : id, kind (text / rectangle / rounded / ellipse / triangle / diamond / line), text, x, y, width, height, fill (#RRGGBB), italic, underline, align, line, line_width, rotation (°), opacity (0,05–1). L’ordre dans le tableau est l’ordre de dessin.
+Writer style: bold, italic, underline, font_family, font_size (6–96), alignment (left / center / right). Slides object: id, kind (text / rectangle / rounded / ellipse / triangle / diamond / line), text, x, y, width, height, fill (#RRGGBB), italic, underline, align, line, line_width, rotation (°), opacity (0.05–1). The order in the array is the drawing order.
 
 ```json
 {"protocol":1,"ok":true,"document":"id","revision":4,"canUndo":true,"canRedo":false,"changes":[{"kind":"CellChanged","data":{"address":"A1","cell":{"input":"=10+20","display":"30"}}}]}
 ```
 
-Les changements sont ordonnés. Les deltas disponibles sont DocumentRenamed, PageLayoutChanged, ParagraphChanged / Inserted / Removed, CellChanged / Recalculated, SlideAdded / Removed et ObjectAdded / Removed / Moved / Updated. Un snapshot complet est réservé à la création, l’ouverture ou la resynchronisation.
+Changes are ordered. The available deltas are DocumentRenamed, PageLayoutChanged, ParagraphChanged / Inserted / Removed, CellChanged / Recalculated, SlideAdded / Removed and ObjectAdded / Removed / Moved / Updated. A full snapshot is reserved for creation, opening or resynchronisation.
 
-Une erreur métier renvoie `ok:false`, `error:{code,message}`, la révision inchangée et `changes:[]`. Codes métier : InvalidCommand, RevisionMismatch. Les erreurs de transport utilisent un code C ABI distinct. Les erreurs de formules (#PARSE!, #REF!, #DIV/0!, #CYCLE!, #VALUE!, #NUM!, #DEPTH!, #LIMIT!) sont des résultats de cellule affichables ; la formule saisie est conservée.
+A business error returns `ok:false`, `error:{code,message}`, the unchanged revision and `changes:[]`. Business codes: InvalidCommand, RevisionMismatch. Transport errors use a separate C ABI code. Formula errors (#PARSE!, #REF!, #DIV/0!, #CYCLE!, #VALUE!, #NUM!, #DEPTH!, #LIMIT!) are displayable cell results; the entered formula is kept.
 
-## Extensions bureautiques (protocole 1, stockage schéma 2)
+## Office extensions (protocol 1, storage schema 2)
 
-Writer : `SplitParagraph` (id, new_id, start, end en unités UTF-16), `MergeParagraph` (id), `ReplaceAll` (find non vide, replacement). Les opérations composées renvoient plusieurs deltas ciblés et s’annulent atomiquement. Les styles ajoutent color, highlight, list, indent, line_spacing et spacing_after.
+Writer: `SplitParagraph` (id, new_id, start, end in UTF-16 units), `MergeParagraph` (id), `ReplaceAll` (non-empty find, replacement). Compound operations return several targeted deltas and undo atomically. Styles add color, highlight, list, indent, line_spacing and spacing_after.
 
-Writer enrichi : `FormatText` (id, start, end, style partiel de caractères), `ReplaceText` (id, start, end, text), `ReplaceRanges` (id, edits : start/end/text non chevauchants, au plus 100 000). Les bornes sont en UTF-16 et doivent respecter les caractères Unicode. Les champs de style autorisés sont bold, italic, underline, font_family, font_size, color et highlight. `SetParagraph` et `InsertParagraph` acceptent aussi `runs` : plages triées `{start,length,style}` avec un style de caractères complet. Un tableau vide retire les plages explicites. Les styles identiques adjacents sont fusionnés ; la validation limite chaque paragraphe à 20 000 plages. Les remplacements, séparations et fusions adaptent les positions et conservent les styles. L’annulation restaure le texte et toutes ses plages.
+Rich Writer: `FormatText` (id, start, end, partial character style), `ReplaceText` (id, start, end, text), `ReplaceRanges` (id, edits: non-overlapping start/end/text, at most 100,000). Bounds are in UTF-16 and must respect Unicode characters. The allowed style fields are bold, italic, underline, font_family, font_size, color and highlight. `SetParagraph` and `InsertParagraph` also accept `runs`: sorted ranges `{start,length,style}` with a complete character style. An empty array removes explicit ranges. Adjacent identical styles are merged; validation limits each paragraph to 20,000 ranges. Replacements, splits and merges adapt positions and keep styles. Undo restores the text and all its ranges.
 
-Sheets : `SortRange` (range, column = décalage dans la plage, descending, header) réordonne les lignes d’une plage selon les valeurs affichées (nombres puis texte, vides en dernier) ; l’inverse est `RestoreCells` (liste address/cell). Environ 50 fonctions ajoutées : SOMME.SI.ENS, NB.SI.ENS, MOYENNE.SI.ENS, SI.CONDITIONS, SI.NON.DISP, CHOISIR, RECHERCHEH, SOMMEPROD, RANG, ECARTYPE, VAR, PLAFOND, PLANCHER, FACT, COMBIN, PGCD, PPCM, ALEA, TROUVE, CHERCHE, SUBSTITUE, REPT, NOMPROPRE, JOINDRE.TEXTE, DATE, AUJOURDHUI, ANNEE, MOIS, JOUR, JOURSEM, SIN, COS, TAN. Page Writer : `header`, `footer` (jetons {page}, {pages}), `header_align`, `footer_align`.
-Sheets : `SetCellStyle` (address, style : bold, format), `RestoreCell` pour les opérations inverses. Formats : general, number, currency, percent. Formules : SUM / SOMME, AVERAGE / MOYENNE, MIN, MAX, COUNT / NB. Les formats changent le display, jamais l’input ni l’évaluation des références.
+Sheets: `SortRange` (range, column = offset within the range, descending, header) reorders the rows of a range by displayed values (numbers then text, blanks last); its inverse is `RestoreCells` (list of address/cell). About 50 functions added (French names, as typed in the app): SOMME.SI.ENS, NB.SI.ENS, MOYENNE.SI.ENS, SI.CONDITIONS, SI.NON.DISP, CHOISIR, RECHERCHEH, SOMMEPROD, RANG, ECARTYPE, VAR, PLAFOND, PLANCHER, FACT, COMBIN, PGCD, PPCM, ALEA, TROUVE, CHERCHE, SUBSTITUE, REPT, NOMPROPRE, JOINDRE.TEXTE, DATE, AUJOURDHUI, ANNEE, MOIS, JOUR, JOURSEM, SIN, COS, TAN. Writer page: `header`, `footer` ({page}, {pages} tokens), `header_align`, `footer_align`.
+Sheets: `SetCellStyle` (address, style: bold, format), `RestoreCell` for inverse operations. Formats: general, number, currency, percent. Formulas: SUM / SOMME, AVERAGE / MOYENNE, MIN, MAX, COUNT / NB. Formats change the display, never the input or the evaluation of references.
 
-Slides : `DuplicateSlide` (id), `MoveSlide` (id, index), `DuplicateObject` (slide, id, new_id facultatif), `ReorderObject` (slide, id, index), `AlignObject` (slide, id, alignment : left / center / right / top / middle / bottom). Deltas supplémentaires : SlideReordered, ObjectReordered. Undo/Redo reconstruit les opérations inverses effectivement appliquées afin de préserver les identifiants lors du rétablissement.
+Slides: `DuplicateSlide` (id), `MoveSlide` (id, index), `DuplicateObject` (slide, id, optional new_id), `ReorderObject` (slide, id, index), `AlignObject` (slide, id, alignment: left / center / right / top / middle / bottom). Additional deltas: SlideReordered, ObjectReordered. Undo/Redo rebuilds the inverse operations actually applied so that identifiers are preserved on redo.
 
 
-## Mise en page Writer (protocole 1, stockage schéma 4)
+## Writer page layout (protocol 1, storage schema 4)
 
-`SetPageLayout` accepte `layout: {width,height,top,right,bottom,left}` en pixels logiques à 96 dpi. `layout:null` restaure le défaut A4 à marges de 96 pixels. Les six valeurs sont finies, les dimensions entre 200 et 2 400, les marges positives ou nulles et la zone de texte au moins 144 × 144. Le delta `PageLayoutChanged` porte `layout` ; Undo/Redo restaure sa valeur précédente. Les styles de paragraphe ajoutent `page_break_before` (false par défaut).
+`SetPageLayout` accepts `layout: {width,height,top,right,bottom,left}` in logical pixels at 96 dpi. `layout:null` restores the default A4 with 96-pixel margins. All six values are finite, dimensions between 200 and 2,400, margins zero or positive, and the text area at least 144 × 144. The `PageLayoutChanged` delta carries `layout`; Undo/Redo restores its previous value. Paragraph styles add `page_break_before` (false by default).
 
-Le stockage schéma 4 protège les données de page contre leur suppression silencieuse par les anciennes versions. Les formats plats sans ces données restent en schéma 2, ou 3 en présence de plages enrichies. Les anciens natifs contenant une source DOCX retrouvent leur format papier à partir du paquet original.
+Storage schema 4 protects page data against silent removal by older versions. Flat formats without this data stay in schema 2, or 3 when rich ranges are present. Older native files containing a DOCX source recover their paper format from the original package.
 
-Tableaux Writer : `InsertParagraph` et `SetParagraph` acceptent `table` : `{rows, header}` où `rows` est une grille rectangulaire de textes (1 à 200 lignes, 1 à 20 colonnes, 5 000 caractères par cellule) et `header` met la première ligne en en-tête. Un tableau est son propre paragraphe : son texte est vide, il n’a pas d’image et ne peut ni être scindé ni fusionné. `null` retire le tableau. Un document contenant un tableau est enregistré en schéma natif 5.
+Writer tables: `InsertParagraph` and `SetParagraph` accept `table`: `{rows, header}` where `rows` is a rectangular grid of strings (1 to 200 rows, 1 to 20 columns, 5,000 characters per cell) and `header` makes the first row a header. A table is its own paragraph: its text is empty, it has no image and it can be neither split nor merged. `null` removes the table. A document containing a table is saved in native schema 5.

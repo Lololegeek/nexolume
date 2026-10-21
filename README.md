@@ -1,114 +1,115 @@
 # Nexolume
 
-Suite bureautique desktop hors ligne pour Windows x64 : C# / .NET 10, Avalonia 11.3.22 et moteurs Rust. Writer, Sheets et Slides partagent une seule application et un historique natif. L’interface conserve les repères d’un traitement de texte à ruban, avec une identité ardoise et bleue propre à Nexolume.
+Offline desktop office suite for Windows x64: C# / .NET 10, Avalonia 11.3.22 and Rust engines. Writer, Sheets and Slides share a single application and a native history. The interface keeps the familiar landmarks of a ribbon word processor, with a slate-and-blue identity specific to Nexolume.
 
-## Lancer
+> The application interface is currently in French.
 
-La distribution portable `artifacts/Nexolume-win-x64/Nexolume.exe` inclut .NET et la DLL Rust. Extraire **tout** le ZIP avant de lancer l’exécutable ; aucune installation ni connexion n’est nécessaire pour travailler.
+## Run
 
-Depuis les sources, installer .NET SDK 10 et Rust stable pour Windows MSVC avec les outils C++ Visual Studio nécessaires à l’édition de liens Rust. Aucun code C++ ne fait partie du projet. La restauration initiale des paquets nécessite Internet.
+The portable distribution `artifacts/Nexolume-win-x64/Nexolume.exe` bundles .NET and the Rust DLL. Extract the **entire** ZIP before launching the executable; no installation or network connection is needed to work.
+
+To build from source, install the .NET 10 SDK and stable Rust for Windows MSVC, with the Visual Studio C++ tools required for Rust linking. No C++ code is part of the project. The initial package restore needs Internet access.
 
 ```powershell
 .\scripts\build.ps1
 .\scripts\run.ps1 -NoBuild
 .\scripts\test.ps1
-# Compiler, tester et produire la distribution autonome :
+# Build, test and produce the self-contained distribution:
 .\scripts\publish.ps1
 ```
 
-## Fonctionnalités disponibles
+## Available features
 
-- **Accueil** : créer les trois types de documents, ouvrir des fichiers locaux et rechercher les documents récents avec leurs chemins et dates de modification.
-- **Shell** : menu Fichier, icônes vectorielles, bandeau d’erreur et dialogue de fermeture cohérents, documents en onglets, titre modifiable avec Entrée, indicateur de modifications, confirmation avant fermeture, thèmes clair et sombre, erreurs affichées dans la barre d’état.
-- **Writer** : saisie UTF-8, plusieurs paragraphes, gras / italique / souligné, police, taille, couleur et surlignage **sur la sélection dans un paragraphe**. L’alignement et les styles de titre restent des propriétés de paragraphe. Entrée scinde le paragraphe, Retour arrière au début fusionne avec le précédent, Maj+Entrée insère une nouvelle ligne simple. Le presse-papiers conserve ici le texte brut. Zoom de 50 à 150 % et règle de repérage visuel.
-- **Sheets** : grille dessinée sur la zone visible, navigation clavier et souris, texte et nombres, formules `+ - * /`, parenthèses, signes unaires, références et `SUM(A1:A5)`. Valeur saisie et résultat séparés. Dépendances, recalcul, cycles et erreurs gérés en Rust.
-- **Slides** : diapositives avec vignettes, zones de texte, rectangles et ellipses, déplacement et redimensionnement à la souris, modification du texte, des coordonnées et de la couleur dans le panneau latéral. Un glissement correspond à une seule entrée d’historique.
-- **Commun** : Undo/Redo Rust, transactions atomiques, deltas versionnés, sauvegarde et chargement natifs. L’écriture utilise un fichier temporaire, un flush disque et un remplacement avec sauvegarde `.bak` pour un fichier existant.
-- **Formats Writer** : ouverture, édition et enregistrement en `.docx` (Word) et `.odt` (LibreOffice/OpenDocument), en plus de `.oswriter`.
+- **Home**: create the three document types, open local files and search recent documents with their paths and modification dates.
+- **Shell**: File menu, vector icons, consistent error banner and close dialog, tabbed documents, title editable with Enter, modification indicator, confirmation before closing, light and dark themes, errors shown in the status bar.
+- **Writer**: UTF-8 typing, multiple paragraphs, bold / italic / underline, font, size, colour and highlight **on a selection within a paragraph**. Alignment and heading styles remain paragraph properties. Enter splits the paragraph, Backspace at the start merges with the previous one, Shift+Enter inserts a plain line break. The clipboard keeps plain text here. Zoom from 50 to 150% and a visual guide ruler.
+- **Sheets**: grid drawn over the visible area, keyboard and mouse navigation, text and numbers, `+ - * /` formulas, parentheses, unary signs, references and `SUM(A1:A5)`. Entered value and result are kept separate. Dependencies, recalculation, cycles and errors are handled in Rust.
+- **Slides**: slides with thumbnails, text boxes, rectangles and ellipses, mouse move and resize, editing of text, coordinates and colour in the side panel. A drag is a single history entry.
+- **Common**: Rust Undo/Redo, atomic transactions, versioned deltas, native save and load. Writing uses a temporary file, a disk flush and a replacement with a `.bak` backup for an existing file.
+- **Writer formats**: open, edit and save as `.docx` (Word) and `.odt` (LibreOffice/OpenDocument), in addition to `.oswriter`.
 
-Formats natifs JSON versionnés (schémas 2 à 4 ; lecture des anciens fichiers de schéma 1) : `.oswriter`, `.ossheet`, `.osslides`. Ces extensions issues du cahier des charges restent reconnues sous le nom Nexolume.
+Versioned JSON native formats (schemas 2 to 4; legacy schema 1 files are still read): `.oswriter`, `.ossheet`, `.osslides`. These extensions come from the original specification and remain recognised under the Nexolume name.
 
-## Raccourcis
+## Shortcuts
 
-| Raccourci | Action |
+| Shortcut | Action |
 |---|---|
-| Ctrl+N | Nouveau texte |
-| Ctrl+O | Ouvrir |
-| Ctrl+S / Ctrl+Maj+S | Enregistrer / Enregistrer sous |
-| Ctrl+Z / Ctrl+Y / Ctrl+Maj+Z | Annuler / Rétablir |
-| Ctrl+W | Fermer l’onglet actif |
-| Sheets : flèches, Page précédente/suivante | Naviguer |
-| Sheets : Entrée ou F2 | Modifier la cellule sélectionnée |
-| Sheets : Suppr / Échap | Effacer la cellule / abandonner la saisie |
-| Sheets : molette / Maj+molette | Défilement vertical / horizontal |
+| Ctrl+N | New text document |
+| Ctrl+O | Open |
+| Ctrl+S / Ctrl+Shift+S | Save / Save as |
+| Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z | Undo / Redo |
+| Ctrl+W | Close the active tab |
+| Sheets: arrows, Page Up/Down | Navigate |
+| Sheets: Enter or F2 | Edit the selected cell |
+| Sheets: Delete / Esc | Clear the cell / cancel the entry |
+| Sheets: wheel / Shift+wheel | Vertical / horizontal scroll |
 
-## Validation et limites
+## Validation and limits
 
-`test.ps1` exécute les tests Rust, les assertions .NET contre la vraie DLL, les scénarios de saisie et de souris Avalonia en environnement headless avec rendu Skia, puis un démarrage **natif Windows** masqué. Les captures sont enregistrées dans `artifacts/validation`. Aucun contrôle du bureau de l’utilisateur n’est nécessaire. Le démarrage natif masqué vérifie la création des trois éditeurs, des commandes, la sauvegarde et leur fermeture ; il ne remplace pas une exploration manuelle de tous les dialogues Windows.
+`test.ps1` runs the Rust tests, the .NET assertions against the real DLL, the Avalonia typing and mouse scenarios in a headless environment with Skia rendering, then a hidden **native Windows** startup. Screenshots are saved in `artifacts/validation`. No control of the user's desktop is required. The hidden native startup checks that the three editors, the commands and saving are created and then closed; it does not replace a manual exploration of every Windows dialog.
 
-Prototype réduit : pas encore de sélection sur plusieurs paragraphes, pagination dans la surface de saisie, insertion d’images, graphiques ou plugins. Writer utilise une surface de saisie extensible et un aperçu paginé partagé avec le PDF et l’impression ; les objets avancés des DOCX importés sont conservés à l’enregistrement mais leur affichage reste simplifié. La règle graduée est un repère visuel, sans taquets modifiables. Sheets propose une feuille par document, une sélection de plages et des opérations atomiques limitées à 1 000 cellules. Les nombres de formule utilisent le point décimal et les fonctions `SUM`, `AVERAGE`, `MIN`, `MAX`, `COUNT` (alias `SOMME`, `MOYENNE`, `NB` disponibles). Le graphe de dépendances est reconstruit à chaque édition ; les calculs et deltas restent ciblés sur les dépendants. Aucun benchmark de grands classeurs n’est revendiqué.
+Reduced prototype: no selection across several paragraphs yet, no pagination in the editing surface, no image insertion, charts or plugins. Writer uses an extendable editing surface and a paginated preview shared with the PDF and printing; advanced objects in imported DOCX files are preserved on save but their display remains simplified. The graduated ruler is a visual guide, without editable tab stops. Sheets offers one sheet per document, range selection and atomic operations limited to 1,000 cells. Formula numbers use the decimal point and the functions `SUM`, `AVERAGE`, `MIN`, `MAX`, `COUNT` (French aliases `SOMME`, `MOYENNE`, `NB` available). The dependency graph is rebuilt on every edit; calculations and deltas stay targeted at dependents. No benchmark on large workbooks is claimed.
 
-Les fichiers natifs sont limités à 16 Mio, les documents DOCX/ODT à 10 Mio, et une cellule à 8 192 octets. Les plages SUM sont limitées à 10 000 cellules et les profondeurs d’expression / dépendance sont bornées. Historique en mémoire uniquement, non conservé après fermeture.
+Native files are limited to 16 MiB, DOCX/ODT documents to 10 MiB, and a cell to 8,192 bytes. SUM ranges are limited to 10,000 cells and expression / dependency depths are bounded. History is kept in memory only and is not retained after closing.
 
-Les fichiers de préférences et le journal d’erreurs sont dans `%LOCALAPPDATA%/Nexolume`. Voir [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/COMMANDS.md](docs/COMMANDS.md), [docs/FFI.md](docs/FFI.md) et [docs/ROADMAP.md](docs/ROADMAP.md).
+Preference files and the error log are in `%LOCALAPPDATA%/Nexolume`. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/COMMANDS.md](docs/COMMANDS.md), [docs/FFI.md](docs/FFI.md) and [docs/ROADMAP.md](docs/ROADMAP.md).
 
-## Passe UI
+## UI pass
 
-Les trois espaces partagent des champs, rubans et états de sélection cohérents. Sheets propose aussi l’accès direct à une adresse, les barres de défilement et la somme des cellules au-dessus. Slides dispose d’un inspecteur contextuel, de valeurs numériques lisibles et d’une palette de remplissage.
+The three spaces share consistent fields, ribbons and selection states. Sheets also offers direct address access, scroll bars and the sum of the cells above. Slides has a contextual inspector, readable numeric values and a fill palette.
 
-Les tests d’interface couvrent 24 rendus supplémentaires : quatre surfaces, deux thèmes et trois tailles (1000, 1440 et 1920 px), plus la recherche des documents récents, la navigation directe, la somme rapide, le changement de diapositive et les choix Annuler / Ne pas enregistrer du dialogue de fermeture.
+The UI tests cover 24 additional renderings: four surfaces, two themes and three sizes (1000, 1440 and 1920 px), plus recent-document search, direct navigation, the quick sum, slide switching and the Cancel / Don't save choices of the close dialog.
 
-La passe de productivité ajoute un plan navigable, des statistiques, un mode concentration avec retour par Échap et l’organisation des paragraphes dans Writer. Sheets dispose d’un ruban à onglets, de sélections à la souris ou avec Maj+flèches, de navigation par plages (`A1:C6`), du copier-coller tabulaire, de formats sur la sélection, de totaux de sélection, du zoom et de l’affichage des formules. Le collage conserve les formules telles quelles, sans recalage relatif des références. Slides propose trois dispositions modifiables, des panneaux repliables et la taille, le gras et la couleur du texte réellement enregistrés. L’accueil filtre et trie les documents récents.
+The productivity pass adds a navigable outline, statistics, a focus mode with return via Esc and paragraph organisation in Writer. Sheets has a tabbed ribbon, mouse or Shift+arrow selections, range navigation (`A1:C6`), tabular copy-paste, formats on the selection, selection totals, zoom and formula display. Pasting keeps formulas as they are, without relative re-anchoring of references. Slides offers three editable layouts, collapsible panels, and text size, bold and colour that are actually saved. Home filters and sorts recent documents.
 
-## Outils bureautiques supplémentaires
+## Additional office tools
 
-- Writer : listes à puces et numérotées, retraits, couleurs, surlignage, justification, interligne et espacement après, effacement du format, recherche avec choix de la casse et des mots entiers, navigation précédente/suivante et remplacements ciblés ou globaux annulables. Le ruban affiche la taille en points, propose une galerie compacte dans une petite fenêtre et peut être masqué. Les propriétés de caractères peuvent être appliquées à une sélection ; sans sélection, la commande garde la portée du paragraphe actif.
-- Sheets : gras et formats général, nombre, monétaire en euros et pourcentage. La valeur calculée reste indépendante de la présentation. Les agrégats ignorent les cellules vides et le texte dans les références.
-- Slides : duplication avec nouveaux identifiants, ordre des diapositives et des objets, centrage sur la diapositive, déplacement au clavier et diaporama plein écran. F5 présente depuis le début, Maj+F5 depuis la diapositive courante ; flèches pour naviguer, Échap pour quitter. Ctrl+D duplique l’objet sélectionné.
-- Writer : Ctrl+B / Ctrl+I / Ctrl+U pour la mise en forme, Ctrl+F / Ctrl+H pour la recherche et le remplacement.
-- Writer, onglet **Révision** : majuscules en début de phrase, correction de doubles majuscules, fautes françaises courantes et remplacements personnels (jusqu’à 100). Les apostrophes, `...`, `(c)`, `(r)`, `(tm)` et les flèches sont convertis pendant la saisie. Les sigles tout en majuscules sont préservés. Les options sont indépendantes et enregistrées dans `%LOCALAPPDATA%/Nexolume/writing.json`.
-- `*`, `-` ou `1.` suivis d’Espace créent une liste. Entrée poursuit la liste ; Entrée sur un élément vide la termine. Retour arrière rétablit immédiatement la dernière correction de texte. Les commandes de casse agissent sur la sélection ou le paragraphe actif ; Maj+F3 alterne les majuscules à chaque mot, tout en majuscules et tout en minuscules. Les modifications s’annulent avec Ctrl+Z.
+- Writer: bulleted and numbered lists, indents, colours, highlight, justification, line spacing and spacing after, format clearing, search with case and whole-word options, previous/next navigation and targeted or global replacements that can be undone. The ribbon shows the size in points, offers a compact gallery in a small window and can be hidden. Character properties can be applied to a selection; without a selection, the command keeps the scope of the active paragraph.
+- Sheets: bold and general, number, euro currency and percent formats. The computed value stays independent of presentation. Aggregates ignore empty cells and text in references.
+- Slides: duplication with new identifiers, slide and object order, centring on the slide, keyboard movement and full-screen slideshow. F5 presents from the start, Shift+F5 from the current slide; arrows to navigate, Esc to exit. Ctrl+D duplicates the selected object.
+- Writer: Ctrl+B / Ctrl+I / Ctrl+U for formatting, Ctrl+F / Ctrl+H for search and replace.
+- Writer, **Review** tab: capitalisation at the start of sentences, correction of double capitals, common French mistakes and personal replacements (up to 100). Apostrophes, `...`, `(c)`, `(r)`, `(tm)` and arrows are converted while typing. All-caps acronyms are preserved. The options are independent and saved in `%LOCALAPPDATA%/Nexolume/writing.json`.
+- `*`, `-` or `1.` followed by Space create a list. Enter continues the list; Enter on an empty item ends it. Backspace immediately restores the last text correction. Case commands act on the selection or the active paragraph; Shift+F3 cycles between capitalising each word, all caps and all lowercase. Changes can be undone with Ctrl+Z.
 
-La correction automatique repose sur des règles et des remplacements. La vérification orthographique ci-dessous la complète ; la correction grammaticale contextuelle n’est pas encore disponible. Le texte collé, les compositions de plusieurs caractères et les documents ouverts ne sont pas réécrits automatiquement. Les adresses et chemins reconnus sont exclus des corrections de mots. Les mots ambigus comme `a`/`à` ou `ou`/`où` restent à la décision de l’auteur. Les tests UI couvrent la saisie réelle, le rétablissement, les options, les remplacements personnels, les listes, le changement de casse, les sauvegardes et le ruban Révision dans les deux thèmes à 1000, 1440 et 1920 px.
+Automatic correction relies on rules and replacements. The spell check below complements it; contextual grammar correction is not yet available. Pasted text, multi-character compositions and opened documents are not rewritten automatically. Recognised addresses and paths are excluded from word corrections. Ambiguous words such as `a`/`à` or `ou`/`où` are left to the author's decision. The UI tests cover real typing, restoration, options, personal replacements, lists, case changes, saving and the Review ribbon in both themes at 1000, 1440 and 1920 px.
 
-## Texte enrichi Writer
+## Writer rich text
 
-Sélectionnez un passage dans un paragraphe pour modifier uniquement ses caractères : gras, italique, souligné, famille de police, taille, couleur et surlignage. Le ruban indique la portée de l’action. **Effacer le format** réinitialise la sélection ; sans sélection, la commande réinitialise le paragraphe. L’alignement, les listes, les retraits et les espacements concernent toujours le paragraphe.
+Select a passage within a paragraph to change only its characters: bold, italic, underline, font family, size, colour and highlight. The ribbon shows the scope of the action. **Clear format** resets the selection; without a selection, the command resets the paragraph. Alignment, lists, indents and spacing always apply to the paragraph.
 
-Le curseur, la sélection, la mesure des glyphes et les retours à la ligne utilisent le même moteur de mise en forme Avalonia. Les portions enrichies survivent à la frappe, aux corrections, à la recherche/remplacement, à Entrée/Retour arrière, à la duplication, à l’annulation et aux sauvegardes `.oswriter`, DOCX et ODT. Les anciens fichiers restent lisibles. Un fichier natif contenant des styles mixtes et sans réglages de page utilise le schéma 3 : les anciennes versions de Nexolume le refusent explicitement au lieu de perdre ces styles. Les fichiers sans styles mixtes ni réglages de page restent en schéma 2.
+The caret, selection, glyph measurement and line wrapping use the same Avalonia layout engine. Rich portions survive typing, corrections, search/replace, Enter/Backspace, duplication, undo and `.oswriter`, DOCX and ODT saves. Older files remain readable. A native file containing mixed styles and no page settings uses schema 3: older versions of Nexolume explicitly refuse it rather than lose those styles. Files without mixed styles or page settings stay in schema 2.
 
-Limites : 20 000 portions de style par paragraphe, sélection dans un seul paragraphe et presse-papiers texte brut. Sans sélection, la mise en forme modifie encore le paragraphe actif plutôt qu’un style de frappe futur. La pagination dans la surface de saisie, les images et les tableaux éditables restent à développer. Les déclarations de polices ODT et les styles sur une sélection sont contrôlés en rouvrant réellement les fichiers avec Microsoft Word, en complément du validateur Open XML et des tests d’édition.
+Limits: 20,000 style portions per paragraph, selection within a single paragraph and plain-text clipboard. Without a selection, formatting still changes the active paragraph rather than a future typing style. Pagination in the editing surface, images and editable tables remain to be developed. ODT font declarations and styles on a selection are verified by actually reopening the files with Microsoft Word, in addition to the Open XML validator and the editing tests.
 
-## Vérification orthographique et recherche Writer
+## Writer spell check and search
 
-**Révision → Orthographe**, ou **F7**, ouvre le panneau de relecture. La vérification s’exécute localement en arrière-plan après une courte pause de saisie, avec les dictionnaires Windows installés (`fr-FR` ou `en-US`). Les mots signalés sont soulignés en rouge et les suggestions se sélectionnent dans le panneau. Une correction passe par le moteur Rust et s’annule avec Ctrl+Z. Une suggestion calculée pour un texte devenu obsolète est ignorée.
+**Review → Spelling**, or **F7**, opens the proofreading panel. The check runs locally in the background after a short typing pause, using the installed Windows dictionaries (`fr-FR` or `en-US`). Flagged words are underlined in red and suggestions are picked in the panel. A correction goes through the Rust engine and can be undone with Ctrl+Z. A suggestion computed for text that has since changed is ignored.
 
-On peut ignorer un mot jusqu’à la fermeture du document, l’ajouter au dictionnaire personnel de Nexolume ou le retirer avec **Mon dictionnaire**. Ces préférences se conservent par langue dans `writing.json` ; le dictionnaire global de Windows n’est pas modifié. Le soulignement est désactivable. Si la langue manque, le panneau l’explique et indique les fonctionnalités linguistiques Windows à installer. La liste est limitée à 200 signalements par paragraphe et ne prétend pas vérifier la grammaire.
+A word can be ignored until the document is closed, added to Nexolume's personal dictionary or removed with **My dictionary**. These preferences are kept per language in `writing.json`; the global Windows dictionary is not modified. The underline can be turned off. If the language is missing, the panel explains it and indicates which Windows language features to install. The list is limited to 200 flags per paragraph and does not claim to check grammar.
 
-La recherche propose **Respecter la casse**, **Mots entiers uniquement**, les occurrences précédente/suivante avec retour au début, le remplacement de la sélection correspondante et le remplacement global en une seule annulation. Les limites des mots prennent en compte les caractères Unicode, y compris les marques combinées. La navigation affiche au plus 10 000 résultats ; le remplacement global traite jusqu’à 100 000 occurrences et 1 000 paragraphes, sans appliquer de résultat partiel si une limite est dépassée.
+Search offers **Match case**, **Whole words only**, previous/next occurrences with wrap-around, replacement of the matching selection and global replacement in a single undo. Word boundaries take Unicode characters into account, including combining marks. Navigation shows at most 10,000 results; global replacement handles up to 100,000 occurrences and 1,000 paragraphs, without applying any partial result if a limit is exceeded.
 
-Les tests couvrent le véritable correcteur français Windows, ses suggestions et positions UTF-16, les langues absentes, le panneau, l’annulation, le dictionnaire personnel, le changement de langue, F7, le mode concentration, les résultats périmés et les rendus dans les deux thèmes à trois tailles. La recherche est vérifiée avec des mots accentués, des emojis, plusieurs paragraphes et plus de 10 000 occurrences.
+The tests cover the real Windows French spell checker, its suggestions and UTF-16 positions, missing languages, the panel, undo, the personal dictionary, language switching, F7, focus mode, stale results and renderings in both themes at three sizes. Search is verified with accented words, emoji, several paragraphs and more than 10,000 occurrences.
 
-Référence de l’intégration native : [Microsoft Spell Checker API](https://learn.microsoft.com/windows/win32/api/spellcheck/).
+Reference for the native integration: [Microsoft Spell Checker API](https://learn.microsoft.com/windows/win32/api/spellcheck/).
 
-L’inspection de Word et ses limites sont consignées dans [docs/WORD_REFERENCE.md](docs/WORD_REFERENCE.md). Les formats DOCX/ODT et leurs limites sont décrits dans [docs/OFFICE_FORMATS.md](docs/OFFICE_FORMATS.md). Tous les outils présentés par Nexolume passent par le moteur Rust pour modifier un document.
+The inspection of Word and its limits are recorded in [docs/WORD_REFERENCE.md](docs/WORD_REFERENCE.md). The DOCX/ODT formats and their limits are described in [docs/OFFICE_FORMATS.md](docs/OFFICE_FORMATS.md). All tools presented by Nexolume go through the Rust engine to modify a document.
 
+## Paper, preview and PDF
 
-## Papier, aperçu et PDF
+In Writer, **Layout → Paper and margins** sets A4, A5, Letter or a custom size, the orientation and the four margins in centimetres. The setting can be undone and redone with the document history. **Insert → Page before paragraph** enables or removes an explicit break. Enter in that paragraph keeps the break on the original paragraph and does not repeat it on the next one.
 
-Dans Writer, **Mise en page → Papier et marges** règle A4, A5, Lettre ou un format personnalisé, l’orientation et les quatre marges en centimètres. Le réglage s’annule et se rétablit avec l’historique du document. **Insertion → Page avant le paragraphe** active ou retire un saut explicite. Entrée dans ce paragraphe conserve le saut sur le paragraphe initial et ne le répète pas sur le suivant.
+**Layout → Preview · PDF · Print**, the File menu or **Ctrl+P** opens the computed pages, with navigation, zoom and PDF export of all pages, the displayed page or a range. Long paragraphs are distributed by whole lines; the PDF contains selectable text, rich styles, lists and page breaks. Export keeps the path and save state of the editable document. Windows printing offers the system dialog, pages and copies; paper/driver output is not validated in this environment, where the Spooler service is stopped and unreachable.
 
-**Mise en page → Aperçu · PDF · Imprimer**, le menu Fichier ou **Ctrl+P** ouvre les pages calculées, avec navigation, zoom et export PDF de toutes les pages, de la page affichée ou d’une plage. Les paragraphes longs sont répartis par lignes entières ; le PDF contient du texte sélectionnable, les styles enrichis, les listes et les sauts de page. L’export conserve le chemin et l’état d’enregistrement du document éditable. L’impression Windows propose le dialogue système, les pages et les copies ; la sortie papier/pilote reste non validée dans cet environnement, dont le service Spouleur est arrêté et inaccessible.
+Native files with page settings or explicit breaks use schema 4. DOCX/ODT keep paper, margins and page breaks. For multi-section DOCX files, the settings modify the last section; the other sections remain in the original package. The preview uses a global format. Word objects absent from the editor are not drawn in the PDF or when printing.
 
-Les fichiers natifs avec réglages de page ou sauts explicites utilisent le schéma 4. DOCX/ODT conservent papier, marges et sauts de page. Pour les DOCX multisections, les réglages modifient la dernière section ; les autres sections restent dans le paquet d’origine. L’aperçu utilise un format global. Les objets Word absents de l’éditeur ne sont pas dessinés dans le PDF ni à l’impression.
-
-Sorties en arrière-plan, sans ouvrir le document dans une fenêtre :
+Background outputs, without opening the document in a window:
 
 ```powershell
-.\Nexolume.exe --export-pdf "C:\Documents\Texte.oswriter" "C:\Documents\Texte.pdf"
-.\Nexolume.exe --print "C:\Documents\Texte.oswriter" "Microsoft Print to PDF" "C:\Documents\Texte-systeme.pdf"
+.\Nexolume.exe --export-pdf "C:\Documents\Text.oswriter" "C:\Documents\Text.pdf"
+.\Nexolume.exe --print "C:\Documents\Text.oswriter" "Microsoft Print to PDF" "C:\Documents\Text-system.pdf"
 ```
 
-Les commandes quittent avec le code 0 en cas de succès, 1 en cas d’erreur (journal local de l’application). Le second exemple nécessite le service d’impression et le pilote indiqué.
+The commands exit with code 0 on success and 1 on error (local application log). The second example requires the print service and the named driver.
 
-Validation : `scripts/test.ps1 -Configuration Release`, `scripts/check-word.ps1 -NoBuild -Configuration Release`, puis `python scripts/check-pdf.py`. Le contrôle PDF indépendant utilise PyMuPDF (`python -m pip install --target artifacts/validation/pdf-tools pymupdf`) et compare le texte complet, les points typographiques, les dimensions, les pages exportées et le paysage. Ces outils de vérification ne sont pas requis par l’application portable.
+Validation: `scripts/test.ps1 -Configuration Release`, `scripts/check-word.ps1 -NoBuild -Configuration Release`, then `python scripts/check-pdf.py`. The independent PDF check uses PyMuPDF (`python -m pip install --target artifacts/validation/pdf-tools pymupdf`) and compares the full text, typographic points, dimensions, exported pages and landscape orientation. These verification tools are not required by the portable application.

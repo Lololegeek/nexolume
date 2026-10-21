@@ -1,21 +1,21 @@
-# Nexolume — système visuel desktop
+# Nexolume — desktop visual system
 
 ## Direction
 
-Ruban bureautique compact, surfaces ardoise, documents sur fond de travail neutre. Le bleu signale les actions et la sélection ; vert pour identifier Sheets, ambre pour Slides. Le thème clair reprend les mêmes hiérarchies.
+Compact office ribbon, slate surfaces, documents on a neutral work background. Blue marks actions and selection; green identifies Sheets, amber Slides. The light theme reuses the same hierarchies.
 
 ## Typography
 
-Segoe UI pour l’interface, 13 px de base ; 11–12 pour les indications secondaires, 15–18 pour les titres de panneaux, 28 pour l’accueil. La police du document reste un choix utilisateur.
+Segoe UI for the interface, 13 px base; 11–12 for secondary hints, 15–18 for panel titles, 28 for the home screen. The document font remains a user choice.
 
 ## Components
 
-Boutons de commande de 32 px minimum, icônes vectorielles de 18 px, rayons de 5–8 px, séparateurs fins. Les formulaires utilisent des labels persistants. Les rubans se replient par onglet, les panneaux restent redimensionnables. Les erreurs se lisent dans un bandeau explicite.
+Command buttons of at least 32 px, 18 px vector icons, 5–8 px radii, thin separators. Forms use persistent labels. Ribbons collapse by tab, panels stay resizable. Errors appear in an explicit banner.
 
 ## Layout
 
-Titre et actions rapides, onglets des documents, ruban de l’éditeur, espace de travail et barre d’état. Accueil centré, créations compactes et vrais fichiers récents filtrables. Writer garde une page blanche ; Sheets une grille virtualisée ; Slides une liste de vignettes et un inspecteur contextuel.
+Title and quick actions, document tabs, editor ribbon, workspace and status bar. Centred home screen, compact creation options and real, filterable recent files. Writer keeps a white page; Sheets a virtualised grid; Slides a list of thumbnails and a contextual inspector.
 
 ## Validation
 
-Captures Skia et scénarios d’interaction aux tailles 1000 × 720, 1440 × 950 et 1920 × 1080, dans les deux thèmes. Aucun accès au bureau utilisateur pour cette validation.
+Skia screenshots and interaction scenarios at 1000 × 720, 1440 × 950 and 1920 × 1080, in both themes. No access to the user's desktop for this validation.

@@ -1,6 +1,6 @@
-# Contrat C ABI
+# C ABI contract
 
-Bibliothèque : `office_ffi.dll`, convention Cdecl, Windows x64. Aucun pointeur C# vers un document Rust n’est exposé. Le document est référencé par un identifiant opaque validé dans le registre de l’instance.
+Library: `office_ffi.dll`, Cdecl calling convention, Windows x64. No C# pointer to a Rust document is exposed. A document is referenced by an opaque identifier validated in the instance's registry.
 
 ```c
 typedef struct { const uint8_t* ptr; size_t len; } OfficeBuffer;
@@ -10,17 +10,17 @@ int32_t office_execute(uint64_t engine, const uint8_t* input, size_t length, Off
 void office_free(const uint8_t* buffer);
 ```
 
-| Ressource | Allocation | Libération |
+| Resource | Allocation | Release |
 |---|---|---|
-| Instance de moteur | Rust, office_create | SafeHandle C#, office_destroy |
-| Documents | Rust, CreateDocument / OpenDocument | CloseDocument ou destruction de l’instance |
-| Entrée UTF-8 | Tableau byte[] C#, valide pendant l’appel | .NET après l’appel |
-| Buffer de réponse | Box<[u8]> Rust gardée dans un registre | C# appelle office_free dans un finally |
+| Engine instance | Rust, office_create | C# SafeHandle, office_destroy |
+| Documents | Rust, CreateDocument / OpenDocument | CloseDocument or destruction of the instance |
+| UTF-8 input | C# byte[] array, valid during the call | .NET after the call |
+| Response buffer | Rust Box<[u8]> kept in a registry | C# calls office_free in a finally block |
 
-`office_create` renvoie 0 si l’instance ne peut pas être créée. `office_execute` renvoie 0 en cas de transport réussi, 1 pour arguments nuls / taille excessive, 2 pour handle inconnu, JSON invalide ou registre indisponible, 3 pour une panic interceptée. Une erreur métier valide reste une réponse JSON avec un transport 0. Le buffer de sortie est initialisé à vide avant traitement. Aucun buffer n’est à libérer lorsque le transport échoue.
+`office_create` returns 0 if the instance cannot be created. `office_execute` returns 0 on successful transport, 1 for null arguments / excessive size, 2 for an unknown handle, invalid JSON or an unavailable registry, and 3 for a caught panic. A valid business error remains a JSON response with transport 0. The output buffer is initialised to empty before processing. No buffer needs to be released when transport fails.
 
-L’appelant doit fournir des plages mémoire d’entrée et de sortie réellement valides. Un test de nullité ne peut pas valider un pointeur arbitraire. Les handles d’instance inconnus ne sont jamais déréférencés ; les libérations de buffers inconnus ou répétées ne déréférencent pas le pointeur fourni. Il faut néanmoins respecter le contrat de propriété et ne pas réutiliser une ancienne adresse après libération.
+The caller must provide input and output memory ranges that are actually valid. A null test cannot validate an arbitrary pointer. Unknown instance handles are never dereferenced; releases of unknown or repeated buffers do not dereference the pointer provided. The ownership contract must still be respected, and an old address must not be reused after release.
 
-Les commandes utilisent des buffers UTF-8 et des longueurs explicites, sans terminateur nul requis. Les registres sont protégés par Mutex. `catch_unwind` empêche les panics récupérables de traverser office_execute et office_create. Il ne protège pas contre les accès mémoire invalides, l’épuisement mémoire ou tous les défauts natifs. Un registre empoisonné produit une erreur au lieu de poursuivre des mutations potentiellement incohérentes.
+Commands use UTF-8 buffers and explicit lengths, with no null terminator required. Registries are protected by a Mutex. `catch_unwind` prevents recoverable panics from crossing office_execute and office_create. It does not protect against invalid memory accesses, memory exhaustion or all native faults. A poisoned registry produces an error instead of continuing with potentially inconsistent mutations.
 
-Les appels C# maintiennent le SafeHandle avec DangerousAddRef / DangerousRelease pendant l’échange. La couche OfficeBridge copie et désérialise la réponse puis libère toujours le buffer Rust. Snapshot, ouverture et sérialisation empruntent office_execute, sans export supplémentaire.
+C# calls hold the SafeHandle with DangerousAddRef / DangerousRelease during the exchange. The OfficeBridge layer copies and deserialises the response, then always releases the Rust buffer. Snapshot, opening and serialisation go through office_execute, with no additional export.

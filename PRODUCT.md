@@ -6,28 +6,28 @@ product
 
 ## Users
 
-Utilisateurs Windows qui rédigent, calculent et composent des présentations sur leur ordinateur, hors ligne. Interface française, travail prolongé au clavier et à la souris, écrans 1080p et 1440p.
+Windows users who write, calculate and build presentations on their own computer, offline. French interface, long sessions on keyboard and mouse, 1080p and 1440p screens.
 
 ## Product Purpose
 
-Une suite bureautique native composée de Writer, Sheets et Slides, avec ouverture, modification, historique et sauvegarde de vrais documents.
+A native office suite made of Writer, Sheets and Slides, with opening, editing, history and saving of real documents.
 
 ## Brand Personality
 
-Claire, précise, personnelle. Le nom public est Nexolume.
+Clear, precise, personal. The public name is Nexolume.
 
 ## Anti-references
 
-Ni copie de Word, ni tableau de bord SaaS générique. Conserver le ruban, les outils groupés et la page centrale, avec un habillage propre à Nexolume. Aucun bouton factice.
+Neither a copy of Word nor a generic SaaS dashboard. Keep the ribbon, grouped tools and the central page, with a look specific to Nexolume. No fake buttons.
 
 ## Design Principles
 
-- Le document est la surface principale.
-- Conserver les repères bureautiques familiers avec une identité distincte.
-- Chaque commande visible doit produire une action réelle.
-- Vérifier le rendu et les parcours fonctionnels à chaque étape.
-- Les trois espaces doivent partager le même vocabulaire d’interface.
+- The document is the main surface.
+- Keep familiar office landmarks with a distinct identity.
+- Every visible command must perform a real action.
+- Check rendering and functional paths at every step.
+- The three spaces must share the same interface vocabulary.
 
 ## Accessibility & Inclusion
 
-Lisibilité en thèmes clair et sombre, focus clavier visible, libellés explicites, contrastes vérifiés. Aucun besoin d’accessibilité particulier supplémentaire n’a été spécifié dans le cahier des charges.
+Legibility in light and dark themes, visible keyboard focus, explicit labels, verified contrast. No additional accessibility need was specified in the original requirements.

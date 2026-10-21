@@ -1,42 +1,42 @@
-# Architecture de Nexolume
+# Nexolume architecture
 
-## Responsabilités
+## Responsibilities
 
-`apps/Desktop` possède les vues XAML, la navigation, la sélection, les brouillons de saisie et le rendu Avalonia / Skia. Les données visibles sont une projection locale du moteur. Les brouillons ne deviennent un contenu confirmé qu’après acceptation d’une commande Rust. Les traitements FFI et les écritures de fichiers s’exécutent de manière asynchrone.
+`apps/Desktop` owns the XAML views, navigation, selection, input drafts and the Avalonia / Skia rendering. The visible data is a local projection of the engine. Drafts become confirmed content only once a Rust command has accepted them. FFI calls and file writes run asynchronously.
 
-`src/OfficeBridge` est l’unique appelant P/Invoke. `OfficeEngine` possède un SafeHandle. `DocumentSession` sérialise les opérations par document, applique les deltas et conserve le chemin / état de sauvegarde. Le contenu et l’historique appartiennent au moteur. Une incohérence de révision provoque un rechargement du snapshot et un rejet explicite de la modification obsolète ; elle n’est pas rejouée silencieusement.
+`src/OfficeBridge` is the only P/Invoke caller. `OfficeEngine` owns a SafeHandle. `DocumentSession` serialises operations per document, applies deltas and keeps the path and save state. Content and history belong to the engine. A revision mismatch reloads the snapshot and explicitly rejects the stale change; it is never silently replayed.
 
-## Workspace Rust
+## Rust workspace
 
-| Crate | Responsabilité |
+| Crate | Responsibility |
 |---|---|
-| document-core | Documents, paragraphes, cellules, diapositives, objets et identifiants |
-| command-system | Enveloppes et schéma de commandes JSON |
-| history-engine | Piles communes d’opérations inverses, transactions et regroupement de frappe |
-| change-tracking | Deltas typés par discriminant, données ciblées |
-| writer-engine | Modifications / validation de paragraphes et styles |
-| sheets-engine | Parseur d’expressions, dépendances, évaluation, cycles, propagation |
-| slides-engine | Diapositives, objets, déplacements et validation géométrique |
-| file-formats | JSON natif versionné, validation à l’ouverture et recalcul |
-| office-ffi | Registres de handles et buffers, frontière C ABI, routage des sessions |
+| document-core | Documents, paragraphs, cells, slides, objects and identifiers |
+| command-system | JSON command envelopes and schema |
+| history-engine | Shared inverse-operation stacks, transactions and typing grouping |
+| change-tracking | Deltas typed by discriminant, targeted data |
+| writer-engine | Paragraph and style edits / validation |
+| sheets-engine | Expression parser, dependencies, evaluation, cycles, propagation |
+| slides-engine | Slides, objects, moves and geometry validation |
+| file-formats | Versioned native JSON, validation on open and recalculation |
+| office-ffi | Handle and buffer registries, C ABI boundary, session routing |
 
-Les inverses portent sur le paragraphe, la cellule ou l’objet concerné. Supprimer une diapositive conserve cette diapositive pour la restauration, sans recopier la présentation entière. La frappe groupée conserve la valeur initiale et la dernière valeur d’un paragraphe au lieu de garder toutes les frappes intermédiaires. Un nouveau changement vide Redo. Une transaction échouée applique les inverses déjà produits, sans modifier la révision.
+Inverses target the paragraph, cell or object concerned. Deleting a slide keeps that slide for restoration, without copying the whole presentation. Grouped typing keeps a paragraph's initial and last values instead of every intermediate keystroke. A new change empties Redo. A failed transaction applies the inverses already produced, without changing the revision.
 
-## Rendu
+## Rendering
 
-Writer réutilise TextBox pour caret, sélection et IME. Son RichTextPresenter surcharge le point d’extension CreateTextLayout d’Avalonia : les propriétés de caractères sont transmises au même TextLayout qui sert à dessiner, mesurer, placer le curseur et sélectionner le texte. Les brouillons suivent les plages enrichies entre les validations Rust ; seuls les styles acceptés par le moteur deviennent des données confirmées. Les overlays d’orthographe utilisent les rectangles de ce TextLayout. Sheets dessine les cellules visibles dans un contrôle unique : aucune instanciation de millions de contrôles. Slides dessine une surface logique 960 × 540, transformée par Viewbox. Le déplacement est prévisualisé localement et confirmé au relâchement.
+Writer reuses TextBox for the caret, selection and IME. Its RichTextPresenter overrides Avalonia's CreateTextLayout extension point: character properties are passed to the same TextLayout that draws, measures, places the caret and selects text. Drafts follow the rich ranges between Rust validations; only styles accepted by the engine become confirmed data. The spell-check overlays use the rectangles of that TextLayout. Sheets draws the visible cells in a single control: no instantiation of millions of controls. Slides draws a 960 × 540 logical surface, transformed by a Viewbox. A move is previewed locally and confirmed on release.
 
-Le moteur calcule et stocke les positions / propriétés. C# utilise les coordonnées courantes de la souris pour proposer une commande. Il n’existe ni serveur HTTP local ni processus moteur séparé.
+The engine computes and stores positions and properties. C# uses the current mouse coordinates to propose a command. There is no local HTTP server and no separate engine process.
 
-## Évolutions
+## Evolution
 
-Les formats sont isolés pour accueillir des importeurs/exporteurs. Remplacer le rendu Writer par un moteur de pagination ne nécessite pas de déplacer l’historique dans C#. Les propriétés de paragraphe restent distinctes des plages de caractères (start/length en UTF-16, styles explicites non chevauchants). Les fichiers natifs nécessitant ces plages, sans réglages de page, utilisent le schéma 3 pour empêcher les anciennes versions de supprimer silencieusement les styles ; le modèle interne normalise les anciens fichiers et les fichiers plats restent en schéma 2. Les deltas ParagraphChanged transportent le texte, le style de paragraphe et ses plages enrichies.
+Formats are isolated to accommodate importers and exporters. Replacing the Writer rendering with a pagination engine does not require moving history into C#. Paragraph properties remain distinct from character ranges (start/length in UTF-16, explicit non-overlapping styles). Native files that need these ranges, without page settings, use schema 3 so that older versions cannot silently drop the styles; the internal model normalises older files and flat files stay in schema 2. ParagraphChanged deltas carry the text, the paragraph style and its rich ranges.
 
 
-## Sortie paginée Writer
+## Writer paginated output
 
-`WriterPrintLayout` façonne les paragraphes du snapshot avec Avalonia TextLayout, puis distribue ses TextLine entières dans les pages. Il conserve les plages enrichies, l’alignement, les marqueurs de listes et les sauts explicites. Le snapshot possède ses layouts et les libère à la fermeture de l’aperçu. La saisie reste dans les TextBox de la surface extensible.
+`WriterPrintLayout` shapes the snapshot's paragraphs with Avalonia TextLayout, then distributes its whole TextLines across pages. It keeps rich ranges, alignment, list markers and explicit breaks. The snapshot owns its layouts and releases them when the preview closes. Typing stays in the TextBoxes of the extendable surface.
 
-`PrintPageControl` dessine ces lignes pour l’aperçu, le PDF Skia et les pages Windows. Les facteurs d’échelle font partie des transformations Avalonia, afin que le backend ne les réinitialise pas. Le PDF convertit 96 pixels logiques en 72 points, écrit un fichier temporaire puis remplace sa destination. L’impression Windows rend chaque page en bitmap BGRA à 192 dpi, puis transmet les pages au DC GDI du pilote ; elle n’est pas vectorielle. Le chemin de document, les révisions et l’historique ne sont pas modifiés par une sortie.
+`PrintPageControl` draws these lines for the preview, the Skia PDF and Windows pages. Scale factors are part of the Avalonia transforms, so the backend does not reset them. The PDF converts 96 logical pixels to 72 points, writes a temporary file, then replaces its destination. Windows printing renders each page as a 192 dpi BGRA bitmap, then passes the pages to the driver's GDI DC; it is not vector output. The document path, revisions and history are not modified by an output.
 
-`PageLayout` appartient au document Rust. DOCX importe les réglages de la section finale ; leur modification touche pgSz/pgMar de cette section et préserve ses autres propriétés. ODT utilise styles.xml et un master-page global. Les réglages et sauts nécessitent le schéma de stockage 4, tout en conservant le schéma interne 2.
+`PageLayout` belongs to the Rust document. DOCX imports the settings of the final section; changing them touches that section's pgSz/pgMar and preserves its other properties. ODT uses styles.xml and a global master page. Settings and breaks require storage schema 4, while the internal schema stays 2.
