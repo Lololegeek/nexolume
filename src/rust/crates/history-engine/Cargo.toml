@@ -1,0 +1,6 @@
+[package]
+name = "history-engine"
+version = "0.1.0"
+edition = "2021"
+[dependencies]
+command-system = { path = "../command-system" }

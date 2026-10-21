@@ -1,0 +1,28 @@
+# Formats Word et LibreOffice
+
+Nexolume Writer ouvre, modifie et enregistre les documents `.docx` (Word) et `.odt` (OpenDocument Text). Ces formats sont disponibles dans les boîtes de dialogue Ouvrir et Enregistrer sous. Le format natif `.oswriter` reste disponible pour conserver les données de Nexolume.
+
+L’import DOCX lit les styles par défaut, les styles de paragraphe et leurs styles parents, puis les propriétés de chaque segment de texte, y compris les styles de caractères hérités. Les polices de thème, les tailles en points, les alignements, les listes, les couleurs, le surlignage et les espacements sont pris en compte. Le texte supprimé par le suivi des modifications et les instructions de champs ne sont pas ajoutés au texte visible.
+
+Un DOCX importé conserve son paquet d’origine. Une sauvegarde sans modification restitue le même fichier octet pour octet. Après édition, Nexolume modifie les paragraphes concernés et recopie les autres parties du paquet : images, relations, styles, en-têtes, pieds de page et autres ressources. Les tableaux et les propriétés de section restent dans le XML du document. Les changements de texte préservent les segments de mise en forme qui les entourent ; le texte remplacé prend le format du segment où commence le remplacement. Un passage par le format natif `.oswriter` conserve aussi ce paquet d’origine.
+
+L’affichage Writer reste simplifié : il montre le texte des cellules comme des paragraphes et ne dessine pas encore les tableaux, les images, les en-têtes, les pieds de page ni la pagination Word. Les styles mélangés pris en charge sont affichés et modifiables sur une sélection dans un paragraphe : gras, italique, souligné, police, taille, couleur et surlignage. Les propriétés avancées non représentées restent conservées dans le paquet DOCX. Déplacer un paragraphe entre une cellule de tableau et le corps du document est refusé lors de l’export pour éviter une réorganisation incorrecte. Les modifications de texte dans un champ ou une révision ne constituent pas un éditeur complet des champs ou du suivi des modifications.
+
+Les nouveaux DOCX exportent les listes à puces/numérotées, les tailles correctes en points, le surlignage, l’interligne et les propriétés de paragraphe. La conservation du paquet d’origine concerne les sauvegardes DOCX : une conversion en ODT conserve le texte et les styles de caractères mixtes pris en charge, sans les objets avancés. L’ODT reste un import/export simplifié et ne bénéficie pas encore de la conservation complète du paquet.
+
+Les anciens fichiers binaires `.doc` et les présentations/classeurs Office ne sont pas encore pris en charge. Les fichiers `.docx` et `.odt` importés sont limités à 10 Mio par l’application ; le moteur limite aussi la taille XML décompressée de chaque partie lue.
+
+La suite de tests vérifie les styles hérités, les unités, les modifications Unicode au milieu de segments, les insertions/déplacements de paragraphes et la conservation des autres parties du ZIP. Le projet de tests d’intégration utilise le validateur de schéma du SDK Open XML de Microsoft ; ce SDK n’est pas une dépendance de l’application distribuée. `scripts/check-word.ps1` crée un document avec Microsoft Word masqué, le modifie via la vraie DLL Rust et le rouvre dans Word pour contrôler texte, mise en forme mixte, tableau, image, en-tête/pied de page et orientation paysage. Il vérifie aussi les puces, le surlignage et la taille d’un nouveau DOCX, l’ajout d’une liste à un DOCX existant et les tailles/polices/décorations d’un passage sélectionné dans un DOCX importé, un nouveau DOCX et un ODT. Microsoft Word doit être installé ; les fichiers de contrôle sont créés dans `artifacts/validation`.
+
+Référence de structure et de styles : [Microsoft Learn — styles de paragraphe WordprocessingML](https://learn.microsoft.com/en-us/office/open-xml/word/how-to-create-and-add-a-paragraph-style-to-a-word-processing-document).
+
+
+### Papier et sortie paginée
+
+Les dimensions, l’orientation, les quatre marges et `pageBreakBefore` sont importés/exportés en DOCX. Les changements de page préservent les attributs non modifiés (notamment distances d’en-tête/pied, gouttière), les références de section et les autres parties ZIP. Le format de la dernière section sert au rendu global ; les sections antérieures ne sont pas éditées par ce réglage.
+
+L’ODT généré contient une définition de page dans styles.xml et les sauts de paragraphe `fo:break-before`. Les réglages DOCX/ODT ont été contrôlés par réouverture dans Word. Les modèles ODT avec plusieurs master-pages sont ramenés à un réglage global.
+
+Le PDF est une sortie du contenu affichable par Nexolume : texte Unicode sélectionnable, styles de caractères, paragraphes/listes et pagination par lignes. Les objets DOCX non rendus dans l’éditeur ne sont pas inclus. Les sauts et formats peuvent donc différer de Word sur des documents avancés ; le paquet DOCX original reste le format de conservation des objets.
+
+Tableaux Writer : un tableau DOCX simple du corps du document (rectangulaire, sans cellules fusionnées, sans image ni objet dans les cellules, 200 lignes et 20 colonnes au plus) est importé comme un paragraphe-tableau éditable, avec sa ligne d’en-tête si elle est marquée `w:tblHeader`. Les tableaux complexes restent aplatis en paragraphes de cellules, comme avant. Un tableau simple non modifié garde son XML d’origine ; le modifier le réécrit avec des bordures simples et perd sa mise en forme Word d’origine. L’export DOCX et ODT écrit des tableaux avec bordures et en-tête en gras ; l’ODT relit les tableaux simples sans fusion ni imbrication. L’impression et le PDF dessinent la grille et passent à la page entre deux lignes.

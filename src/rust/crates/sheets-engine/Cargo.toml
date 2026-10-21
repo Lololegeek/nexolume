@@ -1,0 +1,9 @@
+[package]
+name = "sheets-engine"
+version = "0.1.0"
+edition = "2021"
+[dependencies]
+document-core = { path = "../document-core" }
+command-system = { path = "../command-system" }
+change-tracking = { path = "../change-tracking" }
+serde_json.workspace = true

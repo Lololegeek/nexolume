@@ -1,0 +1,1 @@
+<Application xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="Nexolume.Desktop.App" RequestedThemeVariant="Dark"><Application.Styles><FluentTheme/><StyleInclude Source="avares://Nexolume/DesignSystem/Themes/Office.axaml"/></Application.Styles></Application>

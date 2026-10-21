@@ -1,0 +1,16 @@
+[package]
+name = "office-ffi"
+version = "0.1.0"
+edition = "2021"
+[lib]
+crate-type = ["cdylib", "rlib"]
+[dependencies]
+document-core = { path = "../document-core" }
+command-system = { path = "../command-system" }
+change-tracking = { path = "../change-tracking" }
+history-engine = { path = "../history-engine" }
+writer-engine = { path = "../writer-engine" }
+sheets-engine = { path = "../sheets-engine" }
+slides-engine = { path = "../slides-engine" }
+file-formats = { path = "../file-formats" }
+serde_json.workspace = true

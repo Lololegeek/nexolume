@@ -1,0 +1,13 @@
+[package]
+name = "file-formats"
+version = "0.1.0"
+edition = "2021"
+[dependencies]
+writer-engine = { path = "../writer-engine" }
+sheets-engine = { path = "../sheets-engine" }
+slides-engine = { path = "../slides-engine" }
+document-core = { path = "../document-core" }
+serde_json.workspace = true
+base64 = "0.22"
+roxmltree = "0.21"
+zip = { version = "2.4", default-features = false, features = ["deflate"] }

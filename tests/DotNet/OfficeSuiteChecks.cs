@@ -1,0 +1,28 @@
+using Avalonia.Controls;
+using Avalonia.Headless;
+using Avalonia.Input;
+using Avalonia.Threading;
+using OfficeBridge.Services;
+using Nexolume.Desktop.Editors.Sheets.Views;
+using Nexolume.Desktop.Editors.Slides.Views;
+internal static class OfficeSuiteChecks
+{
+    public static void Sheets()
+    {
+        using var engine = new OfficeEngine(); using var doc = Program.Get(DocumentSession.CreateAsync(engine, "sheets", "Calculs et formats")); var view = new SheetsView(doc); var window = new Window { Content = view, Width = 1440, Height = 950 }; window.Show(); Dispatcher.UIThread.RunJobs();
+        Program.Pump(doc.ExecuteAsync("SetCell", new { address = "A1", input = "10" })); Program.Pump(doc.ExecuteAsync("SetCell", new { address = "A2", input = "20" })); view.Surface.Select(0, 2); Dispatcher.UIThread.RunJobs(); view.FindControl<ComboBox>("AggregateBox")!.SelectedIndex = 1; Program.Click(view, "InsertAggregateButton"); Program.Pump(view.Pending); Program.Check(doc.Snapshot["content"]!["cells"]!["A3"]!["display"]!.GetValue<string>() == "15", "AVERAGE via toolbar");
+        view.FindControl<ComboBox>("CellFormatBox")!.SelectedIndex = 2; Program.Pump(view.Pending); Program.Check(doc.Snapshot["content"]!["cells"]!["A3"]!["display"]!.GetValue<string>() == "15,00 €", "Currency native display"); Program.Click(view, "CellBoldButton"); Program.Pump(view.Pending); Program.Check(doc.Snapshot["content"]!["cells"]!["A3"]!["style"]!["bold"]!.GetValue<bool>(), "Bold native style");
+        Program.Pump(doc.ExecuteAsync("Undo")); Program.Pump(doc.ExecuteAsync("Undo")); Program.Check(doc.Snapshot["content"]!["cells"]!["A3"]!["display"]!.GetValue<string>() == "15", "Format undo"); Program.Pump(doc.ExecuteAsync("Redo")); Program.Pump(doc.ExecuteAsync("Redo"));
+        var path = Path.Combine(Program.Artifacts, "office-sheets.ossheet"); Program.Pump(doc.SaveAsync(path)); using var reopened = Program.Get(DocumentSession.OpenAsync(engine, path)); Program.Check(System.Text.Json.Nodes.JsonNode.DeepEquals(doc.Snapshot["content"], reopened.Snapshot["content"]), "Cell style roundtrip"); Program.Capture(window, "sheets-office-features"); view.Detach(); window.Close(); Console.WriteLine("PASS Office Sheets: aggregate toolbar, native formatting, bold, undo/redo, reopen");
+    }
+    public static void Slides()
+    {
+        using var engine = new OfficeEngine(); using var doc = Program.Get(DocumentSession.CreateAsync(engine, "slides", "Présenter")); var view = new SlidesView(doc); var window = new Window { Content = view, Width = 1440, Height = 950 }; window.Show(); Dispatcher.UIThread.RunJobs(); Program.Pump(view.AddObjectAsync("rectangle")); Program.Click(view, "DuplicateObjectButton"); Program.Pump(view.Pending); var slide = doc.Snapshot["content"]!["slides"]![0]!; var objects = slide["objects"]!.AsArray(); Program.Check(objects.Count == 2, "Duplicate object"); var selected = view.Surface.Selected!;
+        Program.Click(view, "CenterObjectButton"); Program.Pump(view.Pending); var centered = objects.First(o => o!["id"]!.GetValue<string>() == selected)!; Program.Check(centered["x"]!.GetValue<double>() == 360 && centered["y"]!.GetValue<double>() == 190, "Native centering"); Program.Pump(doc.ExecuteAsync("Undo")); Program.Pump(doc.ExecuteAsync("Redo")); Program.Click(view, "SendBackButton"); Program.Pump(view.Pending); Program.Check(objects[0]!["id"]!.GetValue<string>() == selected, "Object layers");
+        Program.Click(view, "DuplicateSlideButton"); Program.Pump(view.Pending); OfficeFeatureChecks.Until(() => doc.Snapshot["content"]!["slides"]!.AsArray().Count == 2); var secondId = doc.Snapshot["content"]!["slides"]![1]!["id"]!.GetValue<string>(); var copiedId = doc.Snapshot["content"]!["slides"]![1]!["objects"]![0]!["id"]!.GetValue<string>(); Program.Check(copiedId != selected, "Duplicated stable IDs differ");
+        Program.Pump(doc.ExecuteAsync("Undo")); Program.Pump(doc.ExecuteAsync("Redo")); Program.Check(doc.Snapshot["content"]!["slides"]![1]!["id"]!.GetValue<string>() == secondId, "Redo preserves duplicated slide identifier"); Program.Pump(doc.ExecuteAsync("Undo")); Program.Pump(doc.ExecuteAsync("Redo"));
+        var list = view.FindControl<ListBox>("SlideList")!; list.SelectedIndex = 1; Dispatcher.UIThread.RunJobs(); Program.Click(view, "MoveSlideUpButton"); Program.Pump(view.Pending); Program.Check(doc.Snapshot["content"]!["slides"]![0]!["id"]!.GetValue<string>() == secondId, "Slide reorder");
+        Program.Click(view, "StartSlideshowButton"); Program.Pump(view.Pending); OfficeFeatureChecks.Until(() => window.OwnedWindows.Any()); var presentation = (SlideshowWindow)window.OwnedWindows.Single(); presentation.KeyPressQwerty(PhysicalKey.ArrowRight, RawInputModifiers.None); Dispatcher.UIThread.RunJobs(); Program.Check(presentation.SlideIndex == 1, "Slideshow navigation"); Program.Capture(presentation, "slideshow-office"); presentation.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None); Dispatcher.UIThread.RunJobs(); Program.Check(!window.OwnedWindows.Any(), "Slideshow escape");
+        var path = Path.Combine(Program.Artifacts, "office-slides.osslides"); Program.Pump(doc.SaveAsync(path)); using var reopened = Program.Get(DocumentSession.OpenAsync(engine, path)); Program.Check(System.Text.Json.Nodes.JsonNode.DeepEquals(doc.Snapshot["content"], reopened.Snapshot["content"]), "Slides advanced roundtrip"); Program.Capture(window, "slides-office-features"); view.Detach(); window.Close(); Console.WriteLine("PASS Office Slides: duplication, stable redo IDs, layers, alignment, slide reorder, slideshow keyboard, reopen");
+    }
+}

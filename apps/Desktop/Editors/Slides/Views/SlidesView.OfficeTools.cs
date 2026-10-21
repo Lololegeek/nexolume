@@ -1,0 +1,23 @@
+using Avalonia.Controls;
+using Avalonia.Input;
+using System.Text.Json.Nodes;
+namespace Nexolume.Desktop.Editors.Slides.Views;
+
+public partial class SlidesView
+{
+    private void SetupOfficeTools()
+    {
+        SizeChanged += (_, _) => { this.FindControl<Grid>("SlideRibbonGrid")!.ColumnDefinitions = new ColumnDefinitions(Bounds.Width < 1260 ? "234,340,250,210" : "278,380,280,220"); };
+        this.FindControl<Button>("DuplicateSlideButton")!.Click += async (_, _) => { await FlushAsync(); var old = slideId; await Enqueue(() => Document.ExecuteAsync("DuplicateSlide", new { id = old })); if (LastError is null) { var index = Slides.Select((s, i) => (s, i)).First(x => x.s!["id"]!.GetValue<string>() == old).i; slideId = Slides[index + 1]!["id"]!.GetValue<string>(); activeObject = null; Render(); } };
+        this.FindControl<Button>("DuplicateObjectButton")!.Click += async (_, _) => await DuplicateObjectAsync();
+        foreach (var (name, front) in new[] { ("BringFrontButton", true), ("SendBackButton", false) }) this.FindControl<Button>(name)!.Click += async (_, _) => { await FlushAsync(); if (activeObject is not null) await Enqueue(() => Document.ExecuteAsync("ReorderObject", new { slide = slideId, id = activeObject, index = front ? Surface.Objects.Count - 1 : 0 })); };
+        this.FindControl<Button>("CenterObjectButton")!.Click += async (_, _) => { await FlushAsync(); if (activeObject is not null) await Enqueue(() => Document.ExecuteAsync("Batch", new { commands = new[] { new { command = "AlignObject", @params = new { slide = slideId, id = activeObject, alignment = "center" } }, new { command = "AlignObject", @params = new { slide = slideId, id = activeObject, alignment = "middle" } } } })); };
+        foreach (var (name, delta) in new[] { ("MoveSlideUpButton", -1), ("MoveSlideDownButton", 1) }) this.FindControl<Button>(name)!.Click += async (_, _) => { await FlushAsync(); var index = Slides.Select((s, i) => (s, i)).First(x => x.s!["id"]!.GetValue<string>() == slideId).i; await Enqueue(() => Document.ExecuteAsync("MoveSlide", new { id = slideId, index = index + delta })); };
+        this.FindControl<Button>("StartSlideshowButton")!.Click += async (_, _) => await PresentAsync(false);
+        AddHandler(KeyDownEvent, async (_, e) => { if (e.Key == Key.F5) { e.Handled = true; await PresentAsync(e.KeyModifiers.HasFlag(KeyModifiers.Shift)); } else if (e.Key == Key.D && e.KeyModifiers.HasFlag(KeyModifiers.Control)) { e.Handled = true; if (activeObject is not null) await DuplicateObjectAsync(); } }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        Surface.KeyDown += async (_, e) => { if (e.Key == Key.Delete && activeObject is not null) { e.Handled = true; await FlushAsync(); await Enqueue(() => Document.ExecuteAsync("DeleteObject", new { slide = slideId, id = activeObject })); } else if (activeObject is not null && e.Key is Key.Left or Key.Right or Key.Up or Key.Down) { e.Handled = true; await FlushAsync(); var o = Surface.Objects.First(o => o!["id"]!.GetValue<string>() == activeObject)!; var step = e.KeyModifiers.HasFlag(KeyModifiers.Shift) ? 10 : 1; var x = o["x"]!.GetValue<double>() + (e.Key == Key.Left ? -step : e.Key == Key.Right ? step : 0); var y = o["y"]!.GetValue<double>() + (e.Key == Key.Up ? -step : e.Key == Key.Down ? step : 0); await Enqueue(() => Document.ExecuteAsync("MoveObject", new { slide = slideId, id = activeObject, x, y })); } };
+    }
+    private async Task DuplicateObjectAsync() { await FlushAsync(); if (activeObject is null) return; var id = activeObject; var next = Guid.NewGuid().ToString(); await Enqueue(() => Document.ExecuteAsync("DuplicateObject", new { slide = slideId, id, new_id = next })); if (LastError is null) { activeObject = next; Surface.Select(next); LoadProperties(); } }
+    private async Task PresentAsync(bool current) { await FlushAsync(); if (LastError is not null) return; var index = current ? Slides.Select((s, i) => (s, i)).First(x => x.s!["id"]!.GetValue<string>() == slideId).i : 0; var window = new SlideshowWindow(Slides, index); if (TopLevel.GetTopLevel(this) is Window owner) window.Show(owner); else window.Show(); }
+    private void UpdateOfficeActions() { var selected = activeObject is not null && Surface.Objects.Any(o => o!["id"]!.GetValue<string>() == activeObject); foreach (var name in new[] { "DuplicateObjectButton", "BringFrontButton", "SendBackButton", "CenterObjectButton" }) this.FindControl<Button>(name)!.IsEnabled = selected; var index = Slides.Select((s, i) => (s, i)).First(x => x.s!["id"]!.GetValue<string>() == slideId).i; this.FindControl<Button>("MoveSlideUpButton")!.IsEnabled = index > 0; this.FindControl<Button>("MoveSlideDownButton")!.IsEnabled = index < Slides.Count - 1; }
+}

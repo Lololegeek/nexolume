@@ -1,0 +1,10 @@
+<Project>
+ <PropertyGroup>
+  <RustProfile Condition="'$(Configuration)' != 'Release'">debug</RustProfile>
+  <RustProfile Condition="'$(Configuration)' == 'Release'">release</RustProfile>
+  <RustNativePath>$(MSBuildThisFileDirectory)src/rust/target/$(RustProfile)/office_ffi.dll</RustNativePath>
+ </PropertyGroup>
+ <ItemGroup>
+  <None Include="$(RustNativePath)" Link="office_ffi.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="Exists('$(RustNativePath)')"/>
+ </ItemGroup>
+</Project>
