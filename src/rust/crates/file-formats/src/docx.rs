@@ -609,7 +609,7 @@ pub fn run_properties_xml(s: &document_core::CharacterStyle, q: &str) -> String 
         s.highlight.trim_start_matches('#')
     };
     format!(
-        r#"<{q}:rPr><{q}:rFonts {q}:ascii="{font}" {q}:hAnsi="{font}"/><{q}:b {q}:val="{bold}"/><{q}:i {q}:val="{italic}"/><{q}:color {q}:val="{color}"/><{q}:sz {q}:val="{size}"/><{q}:highlight {q}:val="none"/><{q}:strike {q}:val="{strike}"/><{q}:u {q}:val="{underline}"/><{q}:vertAlign {q}:val="{vert}"/><{q}:shd {q}:val="clear" {q}:fill="{fill}"/></{q}:rPr>"#
+        r#"<{q}:rPr><{q}:rFonts {q}:ascii="{font}" {q}:hAnsi="{font}"/><{q}:b {q}:val="{bold}"/><{q}:i {q}:val="{italic}"/><{q}:strike {q}:val="{strike}"/><{q}:color {q}:val="{color}"/><{q}:sz {q}:val="{size}"/><{q}:highlight {q}:val="none"/><{q}:u {q}:val="{underline}"/><{q}:shd {q}:val="clear" {q}:fill="{fill}"/><{q}:vertAlign {q}:val="{vert}"/></{q}:rPr>"#
     )
 }
 pub fn run_xml(text: &str, s: &document_core::CharacterStyle, q: &str) -> String {

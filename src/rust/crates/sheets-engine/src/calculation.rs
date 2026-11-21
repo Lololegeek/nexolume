@@ -148,11 +148,12 @@ fn civil_from_days(z: i64) -> (i64, i64, i64) {
 }
 /// Spreadsheet serial number (1900 system) of the current instant.
 fn now_serial() -> f64 {
-    let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs_f64()).unwrap_or(0.0);
+    let secs = document_core::clock::unix_millis() / 1000.0;
     secs / 86400.0 + 25569.0
 }
 fn random_unit() -> f64 {
-    let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.subsec_nanos() as u64).unwrap_or(1);
+    // The sequence keeps successive calls distinct when the platform clock is coarse.
+    let nanos = document_core::clock::entropy();
     let mut x = nanos.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407) ^ 0x9E3779B97F4A7C15;
     x ^= x >> 33; x = x.wrapping_mul(0xff51afd7ed558ccd); x ^= x >> 33;
     (x >> 11) as f64 / (1u64 << 53) as f64

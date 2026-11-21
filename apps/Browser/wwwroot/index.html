@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Nexolume : texte, tableur et présentation, directement dans le navigateur, sans serveur.">
+  <meta name="theme-color" content="#151821">
+  <!-- Everything is served by this origin; .NET and the Rust engine need WebAssembly compilation. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src 'self' blob:; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <title>Nexolume</title>
+  <base href="./">
+  <link rel="icon" href="favicon.ico">
+  <link rel="apple-touch-icon" href="icons/nexolume-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="modulepreload" href="./main.js">
+  <link rel="modulepreload" href="./_framework/dotnet.js">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <div id="out"></div>
+  <div id="splash" role="status" aria-live="polite">
+    <div class="brand"><img src="icons/nexolume-192.png" alt="" width="56" height="56"><span>Nexolume</span></div>
+    <div class="bar" aria-hidden="true"><div></div></div>
+    <p class="message">Chargement de Nexolume…</p>
+  </div>
+  <noscript><p class="noscript">Nexolume a besoin de JavaScript et de WebAssembly pour fonctionner.</p></noscript>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

@@ -1,4 +1,5 @@
 mod calculation;
+mod fill;
 #[cfg(test)]
 mod office_tests;
 pub mod parser;
@@ -11,6 +12,9 @@ pub fn apply(
     cells: &mut BTreeMap<String, Cell>,
     command: &Command,
 ) -> Result<(Command, Vec<Delta>), String> {
+    if command.command == "FillRange" {
+        return fill::apply(cells, command);
+    }
     if ["SortRange", "RestoreCells"].contains(&command.command.as_str()) {
         return apply_block(cells, command);
     }

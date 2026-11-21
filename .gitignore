@@ -3,3 +3,10 @@
 **/target/
 artifacts/
 .vs/
+
+# Rust engine copied into the browser head by scripts/build-web.ps1
+apps/Browser/wwwroot/engine/office_wasm*
+apps/Browser/wwwroot/engine/snippets/
+node_modules/
+tests/Web/test-results/
+tests/Web/playwright-report/

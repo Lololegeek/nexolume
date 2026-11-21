@@ -14,5 +14,7 @@ public abstract class EditorView(DocumentSession document) : UserControl
     protected void DraftUpdated() => DraftChanged?.Invoke();
     protected Task Enqueue(Func<Task> action) { Pending = Run(Pending, action); return Pending; }
     private async Task Run(Task previous, Func<Task> action) { try { await previous; LastError = null; await action(); } catch (Exception ex) { LastError = ex; Services.AppLog.Write(ex); Error?.Invoke(ex); } }
+    /// <summary>Puts the keyboard focus in the document itself (called once the editor is shown).</summary>
+    public virtual void FocusContent() => Focus();
     public virtual void Detach() { }
 }

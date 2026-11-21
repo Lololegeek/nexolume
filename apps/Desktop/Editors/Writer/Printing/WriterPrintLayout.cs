@@ -171,15 +171,14 @@ public sealed class WriterPrintLayout : IDisposable
         using var layout = new TextLayout(text, new Typeface(new FontFamily("Georgia")), Math.Min(11, room), Brushes.Gray, textAlignment: align switch { "left" => TextAlignment.Left, "right" => TextAlignment.Right, _ => TextAlignment.Center }, textWrapping: TextWrapping.NoWrap, textTrimming: TextTrimming.CharacterEllipsis, maxWidth: Settings.Width - Settings.Left - Settings.Right);
         layout.Draw(context, new Point(Settings.Left, below ? edge : edge - 6 - layout.Height));
     }
-    public async Task ExportPdfAsync(string path, int firstPage = 1, int? lastPage = null)
+    public Task ExportPdfAsync(string path, int firstPage = 1, int? lastPage = null) => Platform.AppPlatform.WriteAtomicAsync(path, stream => WritePdfAsync(stream, firstPage, lastPage));
+    /// <summary>Writes the selected pages as a PDF with selectable text (file, download buffer or print blob).</summary>
+    public async Task WritePdfAsync(Stream stream, int firstPage = 1, int? lastPage = null)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
         var last = lastPage ?? pages.Count;
         if (firstPage < 1 || last > pages.Count || firstPage > last) throw new ArgumentOutOfRangeException(nameof(firstPage));
-        var target = Path.GetFullPath(path); var temporary = target + "." + Guid.NewGuid().ToString("N") + ".tmp";
-        try
         {
-            using (var stream = File.Create(temporary))
             using (var pdf = SKDocument.CreatePdf(stream, new SKDocumentPdfMetadata { Title = Title, Creator = "Nexolume" }))
             {
                 for (var i = firstPage - 1; i < last; i++)
@@ -191,9 +190,7 @@ public sealed class WriterPrintLayout : IDisposable
                 }
                 pdf.Close();
             }
-            File.Move(temporary, target, true);
         }
-        finally { if (File.Exists(temporary)) File.Delete(temporary); }
     }
     public void Dispose() { if (disposed) return; disposed = true; foreach (var layout in shaped) layout.Dispose(); shaped.Clear(); foreach (var bitmap in bitmaps) bitmap.Dispose(); bitmaps.Clear(); }
 }

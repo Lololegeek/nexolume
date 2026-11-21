@@ -39,6 +39,8 @@ public partial class WriterView
             panel.Children.Add(item);
         }
         var more = this.FindControl<Button>("MoreStylesButton")!; more.Flyout = flyout;
+        var personal = new Button { Name = "PersonalStylesButton", Content = "Styles personnels…", HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 8, 0, 0) };
+        personal.Click += async (_, _) => { flyout.Hide(); await ShowPersonalStylesAsync(); }; panel.Children.Add(personal);
         this.FindControl<Button>("FormatPainterButton")!.Click += async (_, _) => await FormatPainterAsync();
     }
 

@@ -5,9 +5,13 @@ namespace Nexolume.Desktop;
 
 public partial class App : Application
 {
-    public override void Initialize() => AvaloniaXamlLoader.Load(this);
+    public override void Initialize() { L.Initialize(); AvaloniaXamlLoader.Load(this); }
     public override void OnFrameworkInitializationCompleted()
     {
+#if NEXOLUME_BROWSER
+        // Browser: the page hosts one view; documents, dialogs and the slideshow are drawn inside it.
+        if (ApplicationLifetime is ISingleViewApplicationLifetime page) page.MainView = new Shell.MainView();
+#else
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var window = new Shell.MainWindow(); desktop.MainWindow = window;
@@ -23,6 +27,7 @@ public partial class App : Application
                 window.Opened += async (_, _) => { window.Hide(); var output = System.IO.Path.GetFullPath(smoke[13..]); try { await window.SmokeAsync(output); desktop.Shutdown(0); } catch (Exception ex) { Services.AppLog.Write(ex); System.IO.File.WriteAllText(output, ex.ToString()); desktop.Shutdown(1); } };
             }
         }
+#endif
         base.OnFrameworkInitializationCompleted();
     }
 }

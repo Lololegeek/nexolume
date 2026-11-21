@@ -1,10 +1,11 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
+using Nexolume.Desktop.Platform;
 
 namespace Nexolume.Desktop.Editors.Writer.Printing;
 
-public sealed class PageSetupDialog : Window
+public sealed class PageSetupDialog : DialogWindow
 {
     private readonly ComboBox paper = new() { Name = "PaperSize", ItemsSource = new[] { "A4 · 21 × 29,7 cm", "A5 · 14,8 × 21 cm", "Lettre · 21,59 × 27,94 cm", "Personnalisé" }, HorizontalAlignment = HorizontalAlignment.Stretch };
     private readonly ComboBox orientation = new() { Name = "PageOrientation", ItemsSource = new[] { "Portrait", "Paysage" }, HorizontalAlignment = HorizontalAlignment.Stretch };

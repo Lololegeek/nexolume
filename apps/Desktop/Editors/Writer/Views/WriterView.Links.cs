@@ -141,7 +141,7 @@ public partial class WriterView
     private void OpenLink(string? url)
     {
         if (url is null || !(url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || url.StartsWith("https://", StringComparison.OrdinalIgnoreCase) || url.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase))) return;
-        try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); SetStatus("Ouverture de " + url); }
+        try { Platform.AppPlatform.Current.OpenUrl(url); SetStatus("Ouverture de " + url); }
         catch (Exception error) { SetStatus("Impossible d’ouvrir le lien : " + error.Message); }
     }
 

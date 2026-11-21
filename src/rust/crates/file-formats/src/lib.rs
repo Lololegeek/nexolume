@@ -2,6 +2,9 @@ use document_core::{Content, Document};
 mod docx;
 mod docx_edit;
 mod docx_styles;
+mod ooxml;
+mod pptx;
+mod xlsx;
 mod footnotes;
 mod odt_rich;
 mod page_layout;
@@ -13,6 +16,8 @@ pub fn import_office(format: &str, bytes: &[u8], title: &str) -> Result<Document
     match format {
         "docx" => docx::import(bytes, title),
         "odt" => writer_office::import_odt(bytes, title),
+        "xlsx" => xlsx::import(bytes, title),
+        "pptx" => pptx::import(bytes, title),
         _ => Err(format!("Unsupported office format: {format}")),
     }
 }
@@ -27,6 +32,8 @@ pub fn export_office(document: &Document, format: &str) -> Result<Vec<u8>, Strin
             &footnotes::ordered(document, paragraphs),
             &review::collect(document, paragraphs),
         ),
+        (Content::Sheets { cells }, "xlsx") => xlsx::export(document, cells),
+        (Content::Slides { slides }, "pptx") => pptx::export(document, slides),
         (Content::Writer { .. }, _) => Err(format!("Unsupported writer format: {format}")),
         _ => Err("This office format does not match the document type".into()),
     }
@@ -59,7 +66,9 @@ pub fn encode(document: &Document) -> Result<String, String> {
             .office_source
             .as_ref()
             .is_some_and(|source| source.paragraphs.iter().any(|p| p.image.is_some() || p.table.is_some()));
-    data["schema"] = serde_json::json!(if images {
+    data["schema"] = serde_json::json!(if !document.writer_styles.is_empty() {
+        6
+    } else if images {
         5
     } else if pages {
         4
@@ -71,7 +80,7 @@ pub fn encode(document: &Document) -> Result<String, String> {
     let encoded = serde_json::to_string_pretty(&data).map_err(|e| e.to_string())?;
     if encoded.len() > 16 * 1024 * 1024 {
         return Err(
-            "Le document natif dépasse 16 Mio, y compris son fichier Word d’origine.".into(),
+            "Le document natif dépasse 16 Mio, y compris son fichier Office d’origine.".into(),
         );
     }
     Ok(encoded)
@@ -81,10 +90,14 @@ pub fn decode(text: &str) -> Result<Document, String> {
         return Err("File too large (16 MiB maximum)".into());
     }
     let mut doc: Document = serde_json::from_str(text).map_err(|e| e.to_string())?;
-    if !(1..=5).contains(&doc.schema) {
+    if !(1..=6).contains(&doc.schema) {
         return Err("Unsupported file schema".into());
     }
     doc.schema = 2;
+    writer_engine::validate_named_styles(&doc.writer_styles)?;
+    if !doc.writer_styles.is_empty() && !matches!(doc.content, Content::Writer { .. }) {
+        return Err("Personal styles require Writer".into());
+    }
     // Native documents saved before page settings still contain the original DOCX.
     if doc.page_layout.is_none() {
         if let Some(source) = &mut doc.office_source {

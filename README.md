@@ -18,6 +18,18 @@ To build from source, install the .NET 10 SDK and stable Rust for Windows MSVC, 
 .\scripts\publish.ps1
 ```
 
+## Web version
+
+**[▶ Lancer la version web](https://lololegeek.github.io/nexolume/app/)** — landing page: https://lololegeek.github.io/nexolume/
+
+The same application also runs in the browser, built with Avalonia Browser, .NET WebAssembly and the Rust engine compiled to WebAssembly. It is a static site with no backend and no telemetry, and it works offline after the first visit.
+
+```powershell
+.\scriptsuild-web.ps1 -Serve        # builds artifacts/web and serves it on http://localhost:8080
+```
+
+Deployment (Vercel, GitHub Pages, nginx), browser-specific behaviour and limitations are described in [docs/WEB.md](docs/WEB.md). The main limitations: spell check is unavailable, and only Chromium-based browsers have been tested.
+
 ## Available features
 
 - **Home**: create the three document types, open local files and search recent documents with their paths and modification dates.
@@ -28,7 +40,7 @@ To build from source, install the .NET 10 SDK and stable Rust for Windows MSVC, 
 - **Common**: Rust Undo/Redo, atomic transactions, versioned deltas, native save and load. Writing uses a temporary file, a disk flush and a replacement with a `.bak` backup for an existing file.
 - **Writer formats**: open, edit and save as `.docx` (Word) and `.odt` (LibreOffice/OpenDocument), in addition to `.oswriter`.
 
-Versioned JSON native formats (schemas 2 to 4; legacy schema 1 files are still read): `.oswriter`, `.ossheet`, `.osslides`. These extensions come from the original specification and remain recognised under the Nexolume name.
+Versioned JSON native formats (schemas 2 to 6; legacy schema 1 files are still read): `.oswriter`, `.ossheet`, `.osslides`. These extensions come from the original specification and remain recognised under the Nexolume name.
 
 ## Shortcuts
 
@@ -48,11 +60,11 @@ Versioned JSON native formats (schemas 2 to 4; legacy schema 1 files are still r
 
 `test.ps1` runs the Rust tests, the .NET assertions against the real DLL, the Avalonia typing and mouse scenarios in a headless environment with Skia rendering, then a hidden **native Windows** startup. Screenshots are saved in `artifacts/validation`. No control of the user's desktop is required. The hidden native startup checks that the three editors, the commands and saving are created and then closed; it does not replace a manual exploration of every Windows dialog.
 
-Reduced prototype: no selection across several paragraphs yet, no pagination in the editing surface, no image insertion, charts or plugins. Writer uses an extendable editing surface and a paginated preview shared with the PDF and printing; advanced objects in imported DOCX files are preserved on save but their display remains simplified. The graduated ruler is a visual guide, without editable tab stops. Sheets offers one sheet per document, range selection and atomic operations limited to 1,000 cells. Formula numbers use the decimal point and the functions `SUM`, `AVERAGE`, `MIN`, `MAX`, `COUNT` (French aliases `SOMME`, `MOYENNE`, `NB` available). The dependency graph is rebuilt on every edit; calculations and deltas stay targeted at dependents. No benchmark on large workbooks is claimed.
+The suite remains a developing office application: live editing pagination, multiple spreadsheet tabs, XLSX/PPTX compatibility and plugins are not available. Writer supports selection across paragraphs, editable tables and images; Sheets supports charts. Writer uses an extendable editing surface and a paginated preview shared with the PDF and printing; advanced objects in imported DOCX files are preserved on save but their display remains simplified. The graduated ruler is a visual guide, without editable tab stops. Sheets offers one sheet per document, range selection and atomic operations limited to 1,000 cells. Formula numbers use the decimal point and the functions `SUM`, `AVERAGE`, `MIN`, `MAX`, `COUNT` (French aliases `SOMME`, `MOYENNE`, `NB` available). The dependency graph is rebuilt on every edit; calculations and deltas stay targeted at dependents. No benchmark on large workbooks is claimed.
 
 Native files are limited to 16 MiB, DOCX/ODT documents to 10 MiB, and a cell to 8,192 bytes. SUM ranges are limited to 10,000 cells and expression / dependency depths are bounded. History is kept in memory only and is not retained after closing.
 
-Preference files and the error log are in `%LOCALAPPDATA%/Nexolume`. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/COMMANDS.md](docs/COMMANDS.md), [docs/FFI.md](docs/FFI.md) and [docs/ROADMAP.md](docs/ROADMAP.md).
+Preference files and the error log are in `%LOCALAPPDATA%/Nexolume`. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/COMMANDS.md](docs/COMMANDS.md), [docs/FFI.md](docs/FFI.md), [docs/WEB.md](docs/WEB.md) and [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## UI pass
 
@@ -79,7 +91,7 @@ Select a passage within a paragraph to change only its characters: bold, italic,
 
 The caret, selection, glyph measurement and line wrapping use the same Avalonia layout engine. Rich portions survive typing, corrections, search/replace, Enter/Backspace, duplication, undo and `.oswriter`, DOCX and ODT saves. Older files remain readable. A native file containing mixed styles and no page settings uses schema 3: older versions of Nexolume explicitly refuse it rather than lose those styles. Files without mixed styles or page settings stay in schema 2.
 
-Limits: 20,000 style portions per paragraph, selection within a single paragraph and plain-text clipboard. Without a selection, formatting still changes the active paragraph rather than a future typing style. Pagination in the editing surface, images and editable tables remain to be developed. ODT font declarations and styles on a selection are verified by actually reopening the files with Microsoft Word, in addition to the Open XML validator and the editing tests.
+Limits: 20,000 style portions per paragraph, selection within a single paragraph and plain-text clipboard. Without a selection, formatting still changes the active paragraph rather than a future typing style. Pagination in the editing surface remains to be developed; images and editable tables are available. ODT font declarations and styles on a selection are verified by actually reopening the files with Microsoft Word, in addition to the Open XML validator and the editing tests.
 
 ## Writer spell check and search
 
@@ -113,3 +125,16 @@ Background outputs, without opening the document in a window:
 The commands exit with code 0 on success and 1 on error (local application log). The second example requires the print service and the named driver.
 
 Validation: `scripts/test.ps1 -Configuration Release`, `scripts/check-word.ps1 -NoBuild -Configuration Release`, then `python scripts/check-pdf.py`. The independent PDF check uses PyMuPDF (`python -m pip install --target artifacts/validation/pdf-tools pymupdf`) and compares the full text, typographic points, dimensions, exported pages and landscape orientation. These verification tools are not required by the portable application.
+
+## Reusable styles, data tools and presentation delivery
+
+- **Writer → Accueil → Plus ▾ → Styles personnels…** captures the formatting at the caret (including paragraph borders, spacing and colours) as a named style. Apply it to a paragraph or a selection of paragraphs, replace it from the current formatting, or delete it. All library changes and applications use Rust history. Up to 100 styles, with names up to 48 characters, travel with `.oswriter` files (schema 6). Import/export a JSON library to reuse styles in another document; an import with conflicting names or invalid styles is rejected atomically. Applying a style copies formatting: it does not create a live link that restyles earlier paragraphs after redefining it. DOCX/ODT retain applied formatting, but the personal style library itself is native-only.
+- **Sheets → Données** adds fill down (**Ctrl+D**) and fill right (**Ctrl+R**) from the first row or column of the selected rectangle. Text, values and formatting are copied; relative formula references move and `$` anchors remain fixed. Strings and function names in formulas are preserved. Out-of-sheet references reject the complete operation, and merged cells must be separated first. The range is limited to 10,000 cells. Each recopy recalculates dependents and is undone in one action.
+- **Série en bas / Série à droite** extends two entered numbers as an arithmetic series. Select both seeds plus the destination cells; use two negative numbers or decimal values for decreasing or fractional series. Formula-based and date series are not supported.
+- **Coller en transposant** swaps rows and columns of tabular clipboard text, with one Undo. Formulas are pasted literally; their references are not shifted by transpose or ordinary clipboard paste.
+- **Importer CSV…** loads UTF-8 CSV/TSV at the selected cell, with automatic or explicit comma, semicolon or tab separators. Quoted separators, escaped quotes, accents, BOMs and multiline cells are handled. Import is limited to 1,000 cells and a 4 MB file, and never partially applies an invalid table. **Exporter la sélection…** writes UTF-8 with BOM, using semicolons by default. It exports displayed results (including number formatting), without formulas or formatting metadata. Select the desired table before exporting. CSV is a data exchange format, not an XLSX workbook.
+- **Slides → Propriétés → Thème de la présentation** offers Nexolume, Minuit, Forêt and Papier. Apply to the current slide or the whole deck; text, shapes and backgrounds are recoloured and pictures are kept. One Undo restores the complete previous appearance. **Étendre le fond et la transition à toutes** copies only those two slide settings. **Aligner l’objet** exposes all six canvas alignments.
+- **Slides → Exporter** writes the complete presentation to a 16:9 PDF (720 × 405 points, selectable text) or the current slide to a 1920 × 1080 PNG, without editing the native file or its saved state. Static exports include pictures, rotation, opacity and outlines; they omit presentation controls, selection handles, notes and transitions.
+- During a slideshow, **B** toggles a black screen and **W** a white screen. Type a slide number and press **Enter** to jump directly; invalid numbers retain the current slide. Navigation restores the slide. **N** still toggles notes and **Esc** exits.
+
+`scripts/test.ps1 -Configuration Release` covers the new controls, formula recalculation and anchors, history, native roundtrips, quoted CSV exchanges, portable style libraries, themes and static exports. `python scripts/check-pdf.py` independently checks the Writer and Slides PDFs and the Full HD slide image.

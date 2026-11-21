@@ -21,7 +21,6 @@ public partial class WriterView
     private bool dragging;
     private string? pressId;
     private int pressOffset;
-    private (string Id, int Offset)? shiftAnchor;
 
     public bool HasMultiSelection => multi is not null;
     private JsonArray Paras => Document.Snapshot["content"]!["paragraphs"]!.AsArray();
@@ -77,7 +76,7 @@ public partial class WriterView
     }
     private void BeginMulti(string anchor, int anchorOffset, string focus, int focusOffset)
     {
-        if (anchor == focus) { ExitMulti(focus, Math.Min(anchorOffset, focusOffset), Math.Max(anchorOffset, focusOffset)); return; }
+        if (anchor == focus) { ExitMulti(focus, anchorOffset, focusOffset); return; }
         multi = (anchor, anchorOffset, focus, focusOffset); active = focus;
         if (boxes.TryGetValue(focus, out var box) && !box.IsFocused) box.Focus();
         ShowMulti(); UpdateStyleButtons();
@@ -94,7 +93,7 @@ public partial class WriterView
         }
         if (keep is not null && boxes.TryGetValue(keep, out var kept))
         {
-            active = keep; kept.SelectionStart = start; kept.SelectionEnd = end; kept.CaretIndex = end;
+            active = keep; kept.CaretIndex = end; kept.SelectionStart = start; kept.SelectionEnd = end;
             if (!kept.IsFocused) kept.Focus();
         }
         UpdateStyleButtons();
@@ -157,40 +156,7 @@ public partial class WriterView
     {
         AddHandler(KeyDownEvent, async (_, e) => await OnSelectionKeyAsync(e), RoutingStrategies.Tunnel);
         AddHandler(TextInputEvent, async (_, e) => { if (multi is null || string.IsNullOrEmpty(e.Text) || e.Text.All(char.IsControl)) return; e.Handled = true; await DeleteMultiAsync(e.Text); }, RoutingStrategies.Tunnel);
-        var panel = this.FindControl<StackPanel>("ParagraphPanel")!;
-        AddHandler(PointerPressedEvent, (_, e) =>
-        {
-            if (e.Source is not Visual source || !panel.IsVisualAncestorOf(source) || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
-            shiftAnchor = null;
-            if (e.KeyModifiers.HasFlag(KeyModifiers.Shift) && active is not null && boxes.TryGetValue(active, out var current))
-                shiftAnchor = multi is { } m ? (m.Anchor, m.AnchorOffset) : (active, current.SelectionStart != current.SelectionEnd ? current.SelectionStart : current.CaretIndex);
-        }, RoutingStrategies.Tunnel, true);
-        AddHandler(PointerPressedEvent, (_, e) =>
-        {
-            if (e.Source is not Visual source || !panel.IsVisualAncestorOf(source) || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
-            var id = IdOfBox(source as Control ?? source.FindAncestorOfType<RichParagraphBox>());
-            if (id is null || !boxes.TryGetValue(id, out var box)) { if (multi is not null) ExitMulti(null, 0, 0); dragging = false; shiftAnchor = null; return; }
-            if (shiftAnchor is { } anchor) { shiftAnchor = null; BeginMulti(anchor.Id, anchor.Offset, id, box.CaretIndex); dragging = false; return; }
-            if (multi is not null) ExitMulti(id, box.CaretIndex, box.CaretIndex);
-            dragging = true; pressId = id; pressOffset = box.CaretIndex;
-        }, RoutingStrategies.Bubble, true);
-        AddHandler(PointerMovedEvent, (_, e) =>
-        {
-            if (!dragging || pressId is null) return;
-            if (!e.GetCurrentPoint(panel).Properties.IsLeftButtonPressed) { dragging = false; return; }
-            var position = e.GetPosition(panel); var children = panel.Children; if (children.Count == 0) return;
-            int index = children.Count - 1; for (int i = 0; i < children.Count; i++) if (position.Y < children[i].Bounds.Bottom) { index = i; break; }
-            var list = Paras; if (index >= list.Count) return;
-            if (!IsText(list[index])) { var step = IndexOf(pressId) < index ? 1 : -1; var near = NeighbourText(IdAt(index), step) ?? NeighbourText(IdAt(index), -step); if (near is null) return; index = IndexOf(near); }
-            var targetId = IdAt(index);
-            if (targetId == pressId) { if (multi is not null) { var own = boxes[pressId]; ExitMulti(null, 0, 0); } return; }
-            var target = boxes[targetId]; var presenter = PresenterOf(target); var text = target.Text ?? "";
-            int offset = presenter?.TextLayout is { } layout && text.Length > 0 ? Math.Clamp(layout.HitTestPoint(e.GetPosition(presenter)).TextPosition, 0, text.Length) : (position.Y < target.Bounds.Top + ((Control)target.Parent!).Bounds.Top ? 0 : text.Length);
-            var start = IndexOf(pressId);
-            if (position.Y > ((Control)target.Parent!).Bounds.Bottom) offset = text.Length; else if (position.Y < ((Control)target.Parent!).Bounds.Top) offset = 0;
-            BeginMulti(pressId, Math.Min(pressOffset, TextOf(pressId).Length), targetId, offset);
-        }, RoutingStrategies.Bubble, true);
-        AddHandler(PointerReleasedEvent, (_, _) => dragging = false, RoutingStrategies.Bubble, true);
+        SetupMouseSelection();
     }
 
     private async Task OnSelectionKeyAsync(KeyEventArgs e)

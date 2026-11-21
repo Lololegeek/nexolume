@@ -1,0 +1,12 @@
+{
+  "name": "nexolume-web-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:engine": "node --test wasm-engine.test.mjs",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.0"
+  }
+}

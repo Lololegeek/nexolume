@@ -15,6 +15,7 @@ public static class DocumentProjection
             {
                 case "DocumentRenamed": snapshot["title"] = data["title"]!.DeepClone(); break;
                 case "PageLayoutChanged": snapshot["page_layout"] = data["layout"]?.DeepClone(); break;
+                case "WriterStylesChanged": snapshot["writer_styles"] = data["styles"]!.DeepClone(); break;
                 case "FootnotesChanged": snapshot["footnotes"] = data["footnotes"]?.DeepClone(); break;
                 case "CommentsChanged": snapshot["comments"] = data["comments"]?.DeepClone(); break;
                 case "RevisionsChanged": snapshot["revisions"] = data["revisions"]?.DeepClone(); break;

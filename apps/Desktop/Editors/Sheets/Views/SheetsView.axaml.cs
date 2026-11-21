@@ -64,5 +64,6 @@ public partial class SheetsView : EditorView
     private void Render() { Surface.Cells = Document.Snapshot["content"]!["cells"]!.AsObject(); SyncLayout(); Surface.InvalidateVisual(); UpdateSelectionStatus(); }
     private void LoadInput() { rendering = true; input.Text = Document.Snapshot["content"]!["cells"]?[active]?["input"]?.GetValue<string>() ?? ""; this.FindControl<TextBox>("CellAddress")!.Text = Surface.SelectionAddress; this.FindControl<Button>("SumCellButton")!.IsEnabled = Surface.Row > 0; UpdateCellFormatting(); rendering = false; }
     public override async Task FlushAsync() { if (draft) { draft = false; var address = active; var text = input.Text ?? ""; await Enqueue(() => Document.ExecuteAsync("SetCell", new { address, input = text })); if (LastError is not null) draft = true; DraftUpdated(); } await Pending; }
+    public override void FocusContent() => Surface.Focus();
     public override void Detach() => Document.Changed -= OnChanged;
 }

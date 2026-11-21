@@ -548,8 +548,8 @@ fn apply_character_styles(
                 if left >= right {
                     continue;
                 }
-                let first = writer_engine::rich_text::boundary(value, left - offset)?;
-                let last = writer_engine::rich_text::boundary(value, right - offset)?;
+                let first = writer_engine::rich_text::boundary(&value, left - offset)?;
+                let last = writer_engine::rich_text::boundary(&value, right - offset)?;
                 let generated = crate::docx::run_properties_xml(&segment.style, q);
                 let generated_xml =
                     format!("<nexolumeRoot{namespaces}{extra}>{generated}</nexolumeRoot>");

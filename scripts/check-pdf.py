@@ -35,3 +35,22 @@ pdf[0].get_pixmap(matrix=pymupdf.Matrix(1.4, 1.4)).save(ARTIFACTS / "pagination-
 report = f"PASS independent PDF parsing: {len(pdf)} A5 pages; complete Unicode text; selected 22.5 pt blue bold italic; page range; landscape; page bounds."
 (ARTIFACTS / "pdf-validation.txt").write_text(report, encoding="utf-8")
 print(report)
+
+# Parse the actual Slides deliverables independently of Avalonia and Skia.
+slides = pymupdf.open(ARTIFACTS / "office-slides.pdf")
+assert len(slides) == 2, "Slides PDF must contain every slide exactly once"
+for page, expected_text in zip(slides, ["Première diapositive — été", "Deuxième diapositive : conclusion"]):
+    assert abs(page.rect.width - 720) < .1 and abs(page.rect.height - 405) < .1
+    assert compact(page.get_text()) == compact(expected_text), "Slide text must remain selectable and complete"
+    for word in page.get_text("words"):
+        assert 0 <= word[0] < word[2] <= 720.1 and 0 <= word[1] < word[3] <= 405.1
+    pixmap = page.get_pixmap()
+    assert all(abs(a - b) <= 2 for a, b in zip(pixmap.pixel(5, 5)[:3], (27, 42, 65))), "PDF background must match the saved midnight theme (PDF colour conversion tolerance)"
+image = pymupdf.Pixmap(ARTIFACTS / "office-slide.png")
+assert (image.width, image.height) == (1920, 1080)
+assert image.pixel(5, 5)[:3] == (27, 42, 65), "PNG background must match PDF and native theme"
+assert image.pixel(470, 370)[:3] == (119, 172, 255), "Exported slide must include the recoloured rectangle"
+slides[0].get_pixmap(matrix=pymupdf.Matrix(1.5, 1.5)).save(ARTIFACTS / "office-slides-rendered.png")
+slides_report = "PASS independent Slides PDF/PNG parsing: 2 complete 16:9 pages, selectable French text, bounds, theme colours and 1920x1080 image."
+(ARTIFACTS / "slides-export-validation.txt").write_text(slides_report, encoding="utf-8")
+print(slides_report)

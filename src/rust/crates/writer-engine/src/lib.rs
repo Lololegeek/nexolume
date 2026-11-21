@@ -1,6 +1,16 @@
 use change_tracking::Delta;
 use command_system::Command;
 use document_core::{Paragraph, TextStyle};
+pub fn validate_named_styles(styles: &std::collections::BTreeMap<String, TextStyle>) -> Result<(), String> {
+    if styles.len() > 100 { return Err("Un document peut contenir au maximum 100 styles personnels.".into()); }
+    for (name, style) in styles {
+        if name.trim().is_empty() || name.chars().count() > 48 || name.chars().any(char::is_control) {
+            return Err("Le nom du style doit contenir de 1 à 48 caractères.".into());
+        }
+        validate(&Paragraph { id: "style".into(), text: String::new(), style: style.clone(), runs: vec![], image: None, table: None })?;
+    }
+    Ok(())
+}
 use serde_json::json;
 mod editing;
 pub mod rich_text;

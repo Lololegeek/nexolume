@@ -5,6 +5,6 @@
   <RustNativePath>$(MSBuildThisFileDirectory)src/rust/target/$(RustProfile)/office_ffi.dll</RustNativePath>
  </PropertyGroup>
  <ItemGroup>
-  <None Include="$(RustNativePath)" Link="office_ffi.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="Exists('$(RustNativePath)')"/>
+  <None Include="$(RustNativePath)" Link="office_ffi.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="Exists('$(RustNativePath)') and '$(NexolumeBrowser)' != 'true'"/>
  </ItemGroup>
 </Project>

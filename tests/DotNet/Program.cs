@@ -15,12 +15,13 @@ internal static class Program
 {
     public static string Artifacts = Path.GetFullPath("artifacts/validation");
     [STAThread]
-    public static void Main()
+    public static void Main(string[] args)
     {
         Directory.CreateDirectory(Artifacts);
         AppBuilder.Configure<App>().UseSkia().UseHeadless(new() { UseHeadlessDrawing = false }).SetupWithoutStarting();
         SynchronizationContext.SetSynchronizationContext(new AvaloniaSynchronizationContext());
-        try { PaginationChecks.Run(); RichTextChecks.Run(); Writer(); OfficeFeatureChecks.Writer(); ProductivityChecks.Writer(); ImageChecks.Writer(); TableChecks.Writer(); SelectionChecks.Writer(); LinkChecks.Writer(); FootnoteChecks.Writer(); RevisionChecks.Writer(); RevisionChecks.Columns(); FrameChecks.Writer(); WritingChecks.Run(); ReviewChecks.Spelling(); ReviewChecks.Search(); Console.WriteLine("PASS Avalonia Writer editing, rendered styles, undo/redo, native save/reopen"); Sheets(); OfficeSuiteChecks.Sheets(); ProductivityChecks.Sheets(); SheetsChecks.Run(); Slides(); OfficeSuiteChecks.Slides(); ProductivityChecks.Slides(); SlidesChecks.Run(); Home(); Shell(); VisualChecks.Home(); VisualChecks.Editors(); Console.WriteLine("PASS UI refinements: recent search, sum command, direct navigation and 24 theme/size renders"); }
+        if (args.Contains("--selection")) { try { SelectionChecks.Mouse(); } catch (Exception ex) { Console.Error.WriteLine(ex); Environment.ExitCode = 1; } return; }
+        try { OfficeExpansionChecks.Writer(); OfficeExpansionChecks.Sheets(); OfficeExpansionChecks.Slides(); PaginationChecks.Run(); RichTextChecks.Run(); Writer(); OfficeFeatureChecks.Writer(); ProductivityChecks.Writer(); ImageChecks.Writer(); TableChecks.Writer(); SelectionChecks.Writer(); LinkChecks.Writer(); FootnoteChecks.Writer(); RevisionChecks.Writer(); RevisionChecks.Columns(); FrameChecks.Writer(); WritingChecks.Run(); ReviewChecks.Spelling(); ReviewChecks.Search(); Console.WriteLine("PASS Avalonia Writer editing, rendered styles, undo/redo, native save/reopen"); Sheets(); OfficeSuiteChecks.Sheets(); ProductivityChecks.Sheets(); SheetsChecks.Run(); Slides(); OfficeSuiteChecks.Slides(); ProductivityChecks.Slides(); SlidesChecks.Run(); Home(); Shell(); VisualChecks.Home(); VisualChecks.Editors(); Console.WriteLine("PASS UI refinements: recent search, sum command, direct navigation and 24 theme/size renders"); }
         catch (Exception ex) { Console.Error.WriteLine(ex); Environment.ExitCode = 1; }
     }
     public static void Pump(Task task) { var until = DateTime.UtcNow.AddSeconds(30); while (!task.IsCompleted) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(5); if (DateTime.UtcNow > until) throw new TimeoutException(); } task.GetAwaiter().GetResult(); Dispatcher.UIThread.RunJobs(); }
@@ -76,12 +77,12 @@ internal static class Program
     private static void Shell()
     {
         var window = new Nexolume.Desktop.Shell.MainWindow(); window.Show(); Pump(window.CreateAsync("writer"));
-        var tabs = window.FindControl<TabControl>("DocumentTabs")!; var tab = (TabItem)tabs.SelectedItem!; var editor = (WriterView)tab.Content!;
+        var tabs = window.View.FindControl<TabControl>("DocumentTabs")!; var tab = (TabItem)tabs.SelectedItem!; var editor = (WriterView)tab.Content!;
         var box = editor.FindControl<StackPanel>("ParagraphPanel")!.GetVisualDescendants().OfType<TextBox>().First(); box.Focus(); window.KeyTextInput("Un espace familier pour vos documents."); Dispatcher.UIThread.RunJobs(); Pump(editor.FlushAsync());
         Click(editor, "HeadingStyleButton"); Pump(editor.Pending); Check(box.FontSize == 30, "heading style");
         var zoom = editor.FindControl<Slider>("ZoomSlider")!; zoom.Value = 90;
         Capture(window, "office-word-layout");
-        Click(window, "ThemeButton"); Capture(window, "office-light"); Click(window, "ThemeButton");
+        Click(window.View, "ThemeButton"); Capture(window, "office-light"); Click(window.View, "ThemeButton");
         Pump(editor.Document.SaveAsync(Path.Combine(Artifacts, "shell.oswriter"))); Check(Get(window.CloseTabAsync(tab)), "close saved document"); Pump(window.CreateAsync("writer")); var unsaved = (TabItem)tabs.SelectedItem!;
         var cancel = window.CloseTabAsync(unsaved); Dispatcher.UIThread.RunJobs(); var dialog = window.OwnedWindows.Single(); Capture(dialog, "close-document-dialog"); Click(dialog, "CancelButton"); Check(!Get(cancel), "Cancel closing retains document");
         var discard = window.CloseTabAsync(unsaved); Dispatcher.UIThread.RunJobs(); Click(window.OwnedWindows.Single(), "DiscardButton"); Check(Get(discard), "Discard closes document");

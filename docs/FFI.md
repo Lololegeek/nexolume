@@ -24,3 +24,31 @@ The caller must provide input and output memory ranges that are actually valid. 
 Commands use UTF-8 buffers and explicit lengths, with no null terminator required. Registries are protected by a Mutex. `catch_unwind` prevents recoverable panics from crossing office_execute and office_create. It does not protect against invalid memory accesses, memory exhaustion or all native faults. A poisoned registry produces an error instead of continuing with potentially inconsistent mutations.
 
 C# calls hold the SafeHandle with DangerousAddRef / DangerousRelease during the exchange. The OfficeBridge layer copies and deserialises the response, then always releases the Rust buffer. Snapshot, opening and serialisation go through office_execute, with no additional export.
+
+## WebAssembly contract
+
+The browser cannot load `office_ffi.dll`. The `office-wasm` crate exposes the same `office_ffi::engine::Engine`, through the same JSON protocol, with wasm-bindgen (`--target web`). `apps/Browser/wwwroot/engine/nexolume-engine.js` loads it, and `OfficeBridge.Browser.BrowserOfficeTransport` calls it through `[JSImport]`.
+
+```ts
+create(): number                                   // opaque engine handle (u32, never 0)
+destroy(handle: number): boolean                   // false if the handle was unknown
+execute(handle: number, request: string): string   // one JSON request -> one JSON reply
+openEngines(): number                              // live instances (diagnostics, tests)
+lastPanic(): string | undefined                    // message of the panic that aborted the module
+protocolVersion(): number                          // 1
+```
+
+| Resource | Allocation | Release |
+|---|---|---|
+| Engine instance | Rust, `create`, stored in a thread-local map | `destroy` from `BrowserOfficeTransport.Dispose`, or page unload |
+| Request string | JS string, copied and UTF-8 encoded into WASM memory by wasm-bindgen | wasm-bindgen, after the call |
+| Reply string | Rust `String`, copied out and decoded by wasm-bindgen | wasm-bindgen, after the call |
+
+- **Pointers:** no pointer, length or buffer ever reaches JavaScript or .NET, so there is nothing to free by hand.
+- **Request size:** limited to 16 MiB, the same as `office_execute`.
+- **Transport errors:** thrown as a JS `Error` whose message is `Code: detail`. The codes are `RequestTooLarge`, `UnknownEngine`, `InvalidRequest` and, from the loader, `EngineCrashed`. A business error is a normal reply with `ok: false`.
+- **Panics:** the wasm32 profile uses `panic = "abort"`, so a panic traps the module instead of unwinding.
+  - A panic hook records the message first.
+  - The loader catches the trap and marks the module dead. Every later call throws `EngineCrashed` rather than running on memory left in an unknown state.
+  - The UI shows the error. Reloading the page starts a new module.
+- **Threads:** the browser module runs on the page's main thread, so no locking is needed. The engine's clock comes from `Date.now()`.

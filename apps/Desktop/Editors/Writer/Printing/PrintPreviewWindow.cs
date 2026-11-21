@@ -3,10 +3,11 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
+using Nexolume.Desktop.Platform;
 
 namespace Nexolume.Desktop.Editors.Writer.Printing;
 
-public sealed class PrintPreviewWindow : Window
+public sealed class PrintPreviewWindow : DialogWindow
 {
     private readonly WriterPrintLayout layout;
     private readonly ContentControl sheet = new();
@@ -27,7 +28,7 @@ public sealed class PrintPreviewWindow : Window
         var previous = new Button { Name = "PreviousPage", Content = "‹" }; var next = new Button { Name = "NextPage", Content = "›" };
         ToolTip.SetTip(previous, "Page précédente"); ToolTip.SetTip(next, "Page suivante");
         var export = new Button { Name = "ExportPdf", Content = "Exporter en PDF…" }; export.Classes.Add("primary");
-        var print = new Button { Name = "PrintDocument", Content = "Imprimer…", IsEnabled = OperatingSystem.IsWindows() };
+        var print = new Button { Name = "PrintDocument", Content = "Imprimer…", IsEnabled = AppPlatform.Current.CanPrint };
         var close = new Button { Content = "Fermer" }; close.Click += (_, _) => Close();
         page.Maximum = layout.Pages.Count;
         var tools = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12, Margin = new Thickness(20, 14), Children = { previous, page, new TextBlock { Text = "sur " + layout.Pages.Count, VerticalAlignment = VerticalAlignment.Center }, next, zoom, export, print, close } };
@@ -51,20 +52,21 @@ public sealed class PrintPreviewWindow : Window
         transform.LayoutTransform = new ScaleTransform(.65,.65); RenderPage();
         export.Click += async (_, _) => await Output(async () =>
         {
-            var file = await StorageProvider.SaveFilePickerAsync(new() { Title = "Exporter en PDF", SuggestedFileName = layout.Title + ".pdf", DefaultExtension = "pdf", ShowOverwritePrompt = true, FileTypeChoices = [new("Document PDF") { Patterns = ["*.pdf"] }] });
-            if (file?.TryGetLocalPath() is not string path) return;
-            await ExportPdfAsync(path); message.Text = "PDF exporté : " + path;
+            var (from, to) = PdfRange();
+            var saved = await AppPlatform.Current.SaveFileAsync(this, new() { Title = "Exporter en PDF", SuggestedFileName = layout.Title + ".pdf", DefaultExtension = "pdf", ShowOverwritePrompt = true, FileTypeChoices = [new("Document PDF") { Patterns = ["*.pdf"] }] }, "application/pdf", stream => layout.WritePdfAsync(stream, from, to));
+            if (saved is not null) message.Text = "PDF exporté : " + saved;
         });
-        print.Click += async (_, _) => await Output(async () => { if (await WindowsPrinter.PrintAsync(layout, this)) message.Text = "Document transmis à l’imprimante."; });
-        async Task Output(Func<Task> action) { if (busy) return; busy = true; export.IsEnabled = print.IsEnabled = false; try { await action(); } catch (Exception ex) { message.Text = ex.Message; } finally { busy = false; export.IsEnabled = true; print.IsEnabled = OperatingSystem.IsWindows(); } }
+        print.Click += async (_, _) => await Output(async () => { if (await AppPlatform.Current.PrintAsync(layout, this)) message.Text = AppPlatform.IsBrowser ? "Boîte de dialogue d’impression du navigateur ouverte." : "Document transmis à l’imprimante."; });
+        async Task Output(Func<Task> action) { if (busy) return; busy = true; export.IsEnabled = print.IsEnabled = false; try { await action(); } catch (Exception ex) { message.Text = ex.Message; } finally { busy = false; export.IsEnabled = true; print.IsEnabled = AppPlatform.Current.CanPrint; } }
         Closing += (_, e) => e.Cancel = busy; Closed += (_, _) => layout.Dispose();
     }
-    public Task ExportPdfAsync(string path)
+    public Task ExportPdfAsync(string path) { var (from, to) = PdfRange(); return layout.ExportPdfAsync(path, from, to); }
+    private (int From, int To) PdfRange()
     {
         static int WholePage(NumericUpDown input) => input.Value is decimal value && value == decimal.Truncate(value) ? (int)value : throw new ArgumentException("Saisissez des numéros de page entiers.");
         var from = pdfPages.SelectedIndex == 1 ? WholePage(page) : pdfPages.SelectedIndex == 2 ? WholePage(pdfFrom) : 1;
         var to = pdfPages.SelectedIndex == 1 ? from : pdfPages.SelectedIndex == 2 ? WholePage(pdfTo) : layout.Pages.Count;
         if (from > to) throw new ArgumentException("La première page doit précéder la dernière page.");
-        return layout.ExportPdfAsync(path, from, to);
+        return (from, to);
     }
 }

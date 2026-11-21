@@ -1,0 +1,46 @@
+# Builds the browser version and publishes the site to GitHub Pages:
+# the landing page (site/) at the root and the web app under app/.
+name: web-pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet workload install wasm-tools
+      - run: rustup target add wasm32-unknown-unknown
+      - run: cargo install wasm-bindgen-cli --version 0.2.130 --locked
+      - run: ./scripts/build-web.ps1 -Configuration Release
+        shell: pwsh
+      - name: Assemble site (landing page + app/)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force artifacts/site | Out-Null
+          Copy-Item site/* artifacts/site -Recurse -Force
+          Copy-Item artifacts/web artifacts/site/app -Recurse
+          New-Item -ItemType File -Force artifacts/site/.nojekyll | Out-Null
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: artifacts/site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

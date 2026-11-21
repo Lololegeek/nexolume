@@ -40,3 +40,14 @@ Formats are isolated to accommodate importers and exporters. Replacing the Write
 `PrintPageControl` draws these lines for the preview, the Skia PDF and Windows pages. Scale factors are part of the Avalonia transforms, so the backend does not reset them. The PDF converts 96 logical pixels to 72 points, writes a temporary file, then replaces its destination. Windows printing renders each page as a 192 dpi BGRA bitmap, then passes the pages to the driver's GDI DC; it is not vector output. The document path, revisions and history are not modified by an output.
 
 `PageLayout` belongs to the Rust document. DOCX imports the settings of the final section; changing them touches that section's pgSz/pgMar and preserves its other properties. ODT uses styles.xml and a global master page. Settings and breaks require storage schema 4, while the internal schema stays 2.
+
+## Hosts: Windows and browser
+
+`MainView` holds the whole application UI: home, tabs, editors, status bar and dialog layer. Two heads host it:
+
+- **Windows:** `apps/Desktop` (`MainWindow`, classic desktop lifetime) calls `office_ffi.dll` through `OfficeBridge.Native.NativeOfficeTransport`.
+- **Browser:** `apps/Browser` (`ISingleViewApplicationLifetime`, .NET WebAssembly) compiles the same view sources with the `NEXOLUME_BROWSER` define. It calls the `office-wasm` module through `OfficeBridge.Browser.BrowserOfficeTransport`.
+
+`OfficeEngine` and `DocumentSession` only see `IOfficeTransport`, so revisions, deltas and history behave identically on both hosts.
+
+Host differences sit behind `IAppPlatform` (`AppPlatform.Current`): files and save targets, settings, logging, print, spelling, full screen and the unsaved-changes guard. Dialogs derive from `DialogWindow`, a real window on Windows and an in-page overlay in the browser. See [WEB.md](WEB.md).

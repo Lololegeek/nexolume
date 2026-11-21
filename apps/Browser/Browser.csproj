@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+  <!--
+    Browser head of Nexolume. The UI (shell, editors, design system, localization) is the same
+    source as apps/Desktop: files are linked, not copied, so both heads always build the same views.
+    Only the desktop entry point, the desktop window shell and Windows-only services are excluded;
+    their browser counterparts live in this folder (Platform/, Shell/).
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-browser</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Nexolume</AssemblyName>
+    <RootNamespace>Nexolume.Desktop</RootNamespace>
+    <Product>Nexolume</Product>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NexolumeBrowser>true</NexolumeBrowser>
+    <DefineConstants>$(DefineConstants);NEXOLUME_BROWSER</DefineConstants>
+    <!-- Editors are constructed explicitly, never activated by resource URI (same as Desktop). -->
+    <NoWarn>$(NoWarn);AVLN3001;CA1416</NoWarn>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <WasmEnableWebcil>true</WasmEnableWebcil>
+    <SatelliteResourceLanguages>fr;en</SatelliteResourceLanguages>
+    <!-- The engine protocol serialises anonymous request objects (same code as Desktop). The
+         WebAssembly SDK disables reflection-based System.Text.Json in every configuration; partial
+         trimming (Release) keeps the app assemblies whole, so reflection stays valid. -->
+    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>partial</TrimMode>
+    <DebugType>none</DebugType>
+    <WasmEmitSymbolMap>false</WasmEmitSymbolMap>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Browser" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.22" />
+    <ProjectReference Include="../../src/OfficeBridge/OfficeBridge.csproj" />
+  </ItemGroup>
+  <PropertyGroup>
+    <SharedUi>../Desktop/</SharedUi>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Shared UI sources. -->
+    <Compile Include="$(SharedUi)**/*.cs" Exclude="$(SharedUi)obj/**;$(SharedUi)bin/**;$(SharedUi)artifacts/**;$(SharedUi)Program.cs;$(SharedUi)Shell/MainWindow*.cs;$(SharedUi)Platform/DesktopPlatform.cs;$(SharedUi)Platform/DialogWindow.Desktop.cs;$(SharedUi)Services/BatchOutput.cs;$(SharedUi)Editors/Writer/Printing/WindowsPrinter.cs;$(SharedUi)Editors/Writer/Spelling/WindowsSpelling.cs" Link="Shared/%(RecursiveDir)%(Filename)%(Extension)" />
+    <AvaloniaXaml Include="$(SharedUi)**/*.axaml" Exclude="$(SharedUi)obj/**;$(SharedUi)bin/**;$(SharedUi)Shell/MainWindow.axaml" Link="%(RecursiveDir)%(Filename)%(Extension)" />
+    <AvaloniaResource Include="$(SharedUi)Assets/**" Link="Assets/%(RecursiveDir)%(Filename)%(Extension)" />
+    <EmbeddedResource Include="$(SharedUi)Localization/Locales/*.json" Link="Localization/Locales/%(Filename)%(Extension)" LogicalName="Nexolume.Desktop.Localization.Locales.%(Filename)%(Extension)" />
+  </ItemGroup>
+  <!-- The Rust engine (office-wasm + wasm-bindgen glue) is produced by scripts/build-web.ps1, which
+       copies it to wwwroot/engine before .NET runs. A build without it would start a page that
+       cannot edit anything, so it is an error rather than a silent omission. -->
+  <Target Name="NexolumeCheckEngine" BeforeTargets="Build">
+    <Error Condition="!Exists('$(MSBuildThisFileDirectory)wwwroot/engine/office_wasm_bg.wasm')" Text="Moteur Rust WebAssembly absent de wwwroot/engine : lancez scripts/build-web.ps1 (ou -SkipDotNet) avant dotnet build." />
+  </Target>
+</Project>

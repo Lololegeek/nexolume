@@ -1,9 +1,9 @@
 using Avalonia.Controls;
 namespace Nexolume.Desktop.Shell;
 
-public partial class MainWindow
+public partial class MainView
 {
-    internal async Task SmokeAsync(string output)
+    public async Task SmokeAsync(string output)
     {
         var path = Path.Combine(Path.GetTempPath(), "Nexolume-native-" + Guid.NewGuid().ToString("N")); Directory.CreateDirectory(path);
         try

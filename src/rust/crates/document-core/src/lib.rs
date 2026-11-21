@@ -1,3 +1,4 @@
+pub mod clock;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -263,6 +264,9 @@ pub struct Document {
     /// Writer tracked changes: one pending revision per edited paragraph.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub revisions: Vec<Revision>,
+    /// Reusable paragraph styles carried by native Writer documents.
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub writer_styles: BTreeMap<String, TextStyle>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Comment {
@@ -414,10 +418,7 @@ pub fn id() -> String {
     static NEXT: AtomicU64 = AtomicU64::new(1);
     format!(
         "{:x}-{:x}",
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_nanos(),
+        clock::unix_nanos(),
         NEXT.fetch_add(1, Ordering::Relaxed)
     )
 }
@@ -457,6 +458,7 @@ impl Document {
             footnotes: Vec::new(),
             comments: Vec::new(),
             revisions: Vec::new(),
+            writer_styles: BTreeMap::new(),
         })
     }
 }

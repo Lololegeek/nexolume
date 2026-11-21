@@ -1,4 +1,6 @@
-mod engine;
+//! Native C ABI over the document engine. The browser build uses the `office-wasm` crate,
+//! which drives the same [`engine::Engine`] through wasm-bindgen instead of raw pointers.
+pub mod engine;
 #[cfg(test)]
 mod tests;
 use std::{
@@ -18,7 +20,7 @@ static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1)
 fn engines() -> &'static Mutex<HashMap<u64, engine::Engine>> {
     ENGINES.get_or_init(Default::default)
 }
-#[no_mangle]
+#[cfg_attr(not(target_arch = "wasm32"), no_mangle)]
 pub extern "C" fn office_create() -> u64 {
     catch_unwind(|| {
         let id = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
@@ -32,19 +34,19 @@ pub extern "C" fn office_create() -> u64 {
     })
     .unwrap_or(0)
 }
-#[no_mangle]
+#[cfg_attr(not(target_arch = "wasm32"), no_mangle)]
 pub extern "C" fn office_destroy(id: u64) {
     if let Ok(mut e) = engines().lock() {
         e.remove(&id);
     }
 }
-#[no_mangle]
+#[cfg_attr(not(target_arch = "wasm32"), no_mangle)]
 pub extern "C" fn office_free(ptr: *const u8) {
     if let Ok(mut b) = BUFFERS.get_or_init(Default::default).lock() {
         b.remove(&(ptr as usize));
     }
 }
-#[no_mangle]
+#[cfg_attr(not(target_arch = "wasm32"), no_mangle)]
 pub unsafe extern "C" fn office_execute(
     id: u64,
     input: *const u8,

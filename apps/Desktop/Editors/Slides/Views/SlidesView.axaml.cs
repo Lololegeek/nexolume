@@ -33,7 +33,7 @@ public partial class SlidesView : EditorView
         Surface.TransformCommitted += async (id, rect) => { await FlushAsync(); await Enqueue(() => Document.ExecuteAsync("UpdateObject", new { slide = slideId, id, x = rect.X, y = rect.Y, width = rect.Width, height = rect.Height })); };
         foreach (var name in new[] { "ObjectText", "ObjectX", "ObjectY", "ObjectWidth", "ObjectHeight", "ObjectFill" }) this.FindControl<TextBox>(name)!.TextChanged += (_, _) => { if (!rendering) { var o = Surface.Objects.FirstOrDefault(o => o!["id"]!.GetValue<string>() == activeObject); draft = o is not null && Fields.Any(f => (this.FindControl<TextBox>(f.Name)!.Text ?? "") != PropertyDisplay(o, f.Key)); DraftUpdated(); } };
         foreach (var (name, color) in new[] { ("BlueFill", "#285CB3"), ("GreenFill", "#2D806C"), ("OrangeFill", "#C97F4A"), ("SlateFill", "#48556D") }) this.FindControl<Button>(name)!.Click += async (_, _) => { await FlushAsync(); if (activeObject is not null) await Enqueue(() => Document.ExecuteAsync("UpdateObject", new { slide = slideId, id = activeObject, fill = color })); };
-        SetupOfficeTools(); SetupSlidesProductivity(); SetupSlideDesign(); document.Changed += OnChanged; Render();
+        SetupOfficeTools(); SetupSlidesProductivity(); SetupSlideDesign(); SetupThemesAndExport(); document.Changed += OnChanged; Render();
     }
     private void OnChanged(object? sender, EventArgs e) => Render();
     public async Task AddSlideAsync() { await FlushAsync(); var id = Guid.NewGuid().ToString(); await Enqueue(() => Document.ExecuteAsync("AddSlide", new { id })); slideId = id; activeObject = null; Render(); }

@@ -10,7 +10,7 @@ public partial class SheetsView
 {
     private void SetupRangeTools()
     {
-        foreach (var (name, key) in new[] { ("SheetHomeTab", "Home"), ("SheetFormulasTab", "Formulas"), ("SheetLayoutTab", "Layout"), ("SheetInsertTab", "Insert"), ("SheetViewTab", "View") })
+        foreach (var (name, key) in new[] { ("SheetHomeTab", "Home"), ("SheetFormulasTab", "Formulas"), ("SheetLayoutTab", "Layout"), ("SheetInsertTab", "Insert"), ("SheetDataTab", "Data"), ("SheetViewTab", "View") })
             this.FindControl<Button>(name)!.Click += (_, _) => ShowSheetRibbon(key);
         this.FindControl<Button>("MoreFunctionsButton")!.Click += (_, _) => ShowSheetRibbon("Formulas");
         this.FindControl<Button>("PasteCellsButton")!.Click += async (_, _) => await PasteClipboardAsync();
@@ -30,7 +30,7 @@ public partial class SheetsView
     }
     private void ShowSheetRibbon(string key)
     {
-        foreach (var name in new[] { "Home", "Formulas", "Layout", "Insert", "View" })
+        foreach (var name in new[] { "Home", "Formulas", "Layout", "Insert", "Data", "View" })
         {
             this.FindControl<Grid>("Sheet" + name + "Ribbon")!.IsVisible = name == key;
             this.FindControl<Button>("Sheet" + name + "Tab")!.Classes.Set("selected", name == key);
@@ -83,36 +83,8 @@ public partial class SheetsView
         await FlushAsync();
         await Enqueue(async () =>
         {
-            if (text.Length > 1_000_000) throw new InvalidOperationException("Le contenu du presse-papiers est trop volumineux.");
-            var rows = ParseTabularText(text); var range = Surface.Selection;
-            if (rows.Count * (long)rows.Max(r => r.Count) > 1000 || range.Left + rows.Max(r => r.Count) > 16384 || range.Top + rows.Count > 1048576)
-                throw new InvalidOperationException("Le collage dépasse la feuille ou la limite de 1 000 cellules.");
-            var commands = new List<object>();
-            for (int r = 0; r < rows.Count; r++) for (int c = 0; c < rows[r].Count; c++)
-                commands.Add(new { command = "SetCell", @params = new { address = Controls.SheetGrid.CellName(range.Left + c, range.Top + r), input = rows[r][c] } });
-            await Document.ExecuteAsync("Batch", new { commands });
-            Surface.SelectRange(range.Left, range.Top, range.Left + rows.Max(r => r.Count) - 1, range.Top + rows.Count - 1);
+            await ApplyTabularAsync(TabularData.Parse(text, '\t'));
         });
-    }
-    private static List<List<string>> ParseTabularText(string text)
-    {
-        var rows = new List<List<string>>(); var row = new List<string>(); var field = new StringBuilder(); bool quoted = false;
-        for (int i = 0; i < text.Length; i++)
-        {
-            var ch = text[i];
-            if (ch == '"' && (quoted || field.Length == 0))
-            { if (quoted && i + 1 < text.Length && text[i + 1] == '"') { field.Append('"'); i++; } else quoted = !quoted; }
-            else if (!quoted && (ch == '\t' || ch == '\n' || ch == '\r'))
-            {
-                row.Add(field.ToString()); field.Clear();
-                if (ch != '\t') { if (ch == '\r' && i + 1 < text.Length && text[i + 1] == '\n') i++; rows.Add(row); row = []; }
-                if (rows.Count > 1000 || row.Count > 1000) throw new InvalidOperationException("Le collage est limité à 1 000 cellules.");
-            }
-            else field.Append(ch);
-        }
-        if (quoted) throw new InvalidOperationException("Le tableau copié contient des guillemets non fermés.");
-        if (field.Length > 0 || row.Count > 0 || rows.Count == 0) { row.Add(field.ToString()); rows.Add(row); }
-        return rows;
     }
     public async Task ClearSelectionAsync()
     {

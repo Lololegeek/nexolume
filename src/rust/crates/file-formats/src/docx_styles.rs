@@ -110,20 +110,70 @@ pub fn paragraphs<'a, 'b>(root: Node<'a, 'b>) -> Vec<Node<'a, 'b>> {
 pub fn text_tokens<'a, 'b>(p: Node<'a, 'b>) -> Vec<Node<'a, 'b>> {
     p.descendants()
         .filter(|n| {
-            ["t", "tab", "br", "cr"].iter().any(|name| word(*n, name))
+            ["t", "tab", "br", "cr", "sym", "noBreakHyphen", "softHyphen"].iter().any(|name| word(*n, name))
                 && n.ancestors().find(|n| word(*n, "p")) == Some(p)
                 && !n.ancestors().any(|a| word(a, "del") || word(a, "moveFrom"))
         })
         .collect()
 }
-pub fn token_text<'a>(n: Node<'a, '_>) -> &'a str {
+pub fn token_text<'a>(n: Node<'a, '_>) -> std::borrow::Cow<'a, str> {
+    use std::borrow::Cow;
     if word(n, "t") {
-        n.text().unwrap_or("")
+        Cow::Borrowed(n.text().unwrap_or(""))
     } else if word(n, "tab") {
-        "\t"
+        Cow::Borrowed("\t")
+    } else if word(n, "noBreakHyphen") {
+        Cow::Borrowed("\u{2011}")
+    } else if word(n, "softHyphen") {
+        Cow::Borrowed("\u{00AD}")
+    } else if word(n, "sym") {
+        Cow::Owned(symbol(attr(n, "font").unwrap_or(""), attr(n, "char")).to_string())
     } else {
-        "\n"
+        Cow::Borrowed("\n")
     }
+}
+/// Unicode equivalent of a `w:sym` glyph; symbol fonts map glyphs to U+F000 + code.
+fn symbol(font: &str, code: Option<&str>) -> char {
+    let Some(c) = code
+        .and_then(|c| u32::from_str_radix(c, 16).ok())
+        .map(|c| if (0xF000..=0xF0FF).contains(&c) { c - 0xF000 } else { c })
+    else {
+        return '\u{FFFD}';
+    };
+    if font.eq_ignore_ascii_case("Wingdings") {
+        return match c {
+            0xFC => '✓',
+            0xFB => '✗',
+            0xFE => '☑',
+            0xA8 => '☐',
+            0x6C => '●',
+            0xA7 => '▪',
+            0xD8 => '➢',
+            0xE0 => '→',
+            0x4A => '☺',
+            _ => '•',
+        };
+    }
+    if font.eq_ignore_ascii_case("Symbol") {
+        let mapped = match c {
+            0xB7 => Some('•'),
+            0xAE => Some('→'),
+            0xAC => Some('←'),
+            0xB4 => Some('×'),
+            0xB8 => Some('÷'),
+            0xB1 => Some('±'),
+            0xA3 => Some('≤'),
+            0xB3 => Some('≥'),
+            0xB9 => Some('≠'),
+            0xA5 => Some('∞'),
+            0x61..=0x79 => char::from_u32(c - 0x61 + 0x3B1),
+            _ => None,
+        };
+        if let Some(m) = mapped {
+            return m;
+        }
+    }
+    char::from_u32(c).filter(|c| !c.is_control()).unwrap_or('\u{FFFD}')
 }
 
 pub struct Catalog<'a, 'b> {
@@ -282,6 +332,12 @@ impl<'a, 'b> Catalog<'a, 'b> {
         }
         if let Some(n) = child(properties, "strike") {
             style.strike = attr(n, "val").is_none_or(on);
+        }
+        if let Some(n) = child(properties, "dstrike") {
+            style.strike |= attr(n, "val").is_none_or(on);
+        }
+        if let Some(n) = child(properties, "smallCaps") {
+            style.small_caps = attr(n, "val").is_none_or(on);
         }
         if let Some(n) = child(properties, "vertAlign") {
             let v = attr(n, "val").unwrap_or("baseline");

@@ -34,7 +34,24 @@ public partial class WriterView : EditorView
         document.Changed += OnChanged; Render();
     }
     private void OnChanged(object? sender, EventArgs e) => Render();
-    public override void Detach() { timer.Stop(); spellingTimer.Stop(); spellingDetached = true; Document.Changed -= OnChanged; }
+    public override void FocusContent()
+    {
+        // The paragraph boxes are laid out (and may be rebuilt by a render) after the view itself:
+        // try again briefly until the active paragraph really holds the keyboard focus.
+        var attempts = 0;
+        bool Apply()
+        {
+            if (active is null || !boxes.TryGetValue(active, out var box)) { if (attempts >= 20) Focus(); return attempts >= 20; }
+            if (box.IsFocused) return true;
+            if (box.IsLoaded && box.IsEffectivelyVisible && box.Focus()) { box.CaretIndex = box.Text?.Length ?? 0; return box.IsFocused; }
+            return false;
+        }
+        if (Apply()) return;
+        var retry = new Avalonia.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
+        retry.Tick += (_, _) => { if (Apply() || ++attempts > 20) retry.Stop(); };
+        retry.Start();
+    }
+    public override void Detach() { StopMouseSelection(); timer.Stop(); spellingTimer.Stop(); spellingDetached = true; Document.Changed -= OnChanged; }
     public override async Task FlushAsync() { timer.Stop(); await FlushTablesAsync(); await FlushFootnotesAsync(); await FlushCommentsAsync(); var pending = drafts.ToArray(); var pendingRuns = pending.ToDictionary(p => p.Key, p => boxes[p.Key].Runs.DeepClone()); drafts.Clear(); await TrackEditsAsync(pending); foreach (var (id, text) in pending) { await Enqueue(() => Document.ExecuteAsync("SetParagraph", new { id, text, runs = pendingRuns[id], group })); if (LastError is not null && !drafts.ContainsKey(id)) drafts[id] = text; } await Pending; DraftUpdated(); }
     private async Task StyleAsync(string property)
     {

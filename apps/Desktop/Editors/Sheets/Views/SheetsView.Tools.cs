@@ -7,7 +7,7 @@ public partial class SheetsView
 {
     private void SetupTools()
     {
-        SetupCellFormatting(); SetupRangeTools();
+        SetupCellFormatting(); SetupRangeTools(); SetupDataTools();
         var vertical = this.FindControl<ScrollBar>("VerticalScroll")!; var horizontal = this.FindControl<ScrollBar>("HorizontalScroll")!;
         Surface.ViewportChanged += () => { vertical.Value = Surface.FirstRow; horizontal.Value = Surface.FirstColumn; };
         vertical.ValueChanged += (_, _) => { Surface.FirstRow = (int)vertical.Value; Surface.InvalidateVisual(); }; horizontal.ValueChanged += (_, _) => { Surface.FirstColumn = (int)horizontal.Value; Surface.InvalidateVisual(); };

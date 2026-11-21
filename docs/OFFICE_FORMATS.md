@@ -10,9 +10,19 @@ The Writer display remains simplified: it shows cell text as paragraphs and does
 
 New DOCX files export bulleted/numbered lists, correct point sizes, highlighting, line spacing and paragraph properties. Keeping the original package applies to DOCX saves: converting to ODT keeps the text and the supported mixed character styles, without advanced objects. ODT remains a simplified import/export and does not yet benefit from full package preservation.
 
-Legacy binary `.doc` files and Office presentations/workbooks are not yet supported. Imported `.docx` and `.odt` files are limited to 10 MiB by the application; the engine also limits the decompressed XML size of each part it reads.
+Legacy binary `.doc`, `.xls` and `.ppt` files are not supported. Imported `.docx`, `.odt`, `.xlsx` and `.pptx` files are limited to 10 MiB by the application; the engine also limits the decompressed XML size of each part it reads.
 
 The test suite checks inherited styles, units, Unicode edits in the middle of runs, paragraph insertions/moves and preservation of the other ZIP parts. The integration test project uses the schema validator from Microsoft's Open XML SDK; that SDK is not a dependency of the distributed application. `scripts/check-word.ps1` creates a document with a hidden Microsoft Word, modifies it through the real Rust DLL and reopens it in Word to check text, mixed formatting, table, image, header/footer and landscape orientation. It also checks the bullets, highlighting and size of a new DOCX, the addition of a list to an existing DOCX, and the sizes/fonts/decorations of a selected passage in an imported DOCX, a new DOCX and an ODT. Microsoft Word must be installed; the check files are created in `artifacts/validation`.
+
+DOCX import also keeps symbols (`w:sym`, Wingdings/Symbol mapped to Unicode), non-breaking and soft hyphens, double strikethrough and small capitals; these characters stay editable and are written back as plain text runs.
+
+### Excel workbooks (.xlsx)
+
+Sheets opens `.xlsx` workbooks: values, shared and inline strings, formulas (with their cached result), number formats, fonts, fills, alignment, borders, merged cells, column widths and row heights are read from the first worksheet, with theme and tinted colours resolved. An unchanged workbook is saved back byte for byte; after edits, only the edited worksheet and the shared strings/styles are rewritten and every other part (other sheets, charts, images, defined names) is copied unchanged. New workbooks export a valid minimal package.
+
+### PowerPoint presentations (.pptx)
+
+Slides opens `.pptx` decks: slide size, backgrounds (slide, layout and master), text boxes and placeholders with their inherited text styles, shapes with fill and outline, pictures, simple tables and speaker notes. An unchanged deck is saved back byte for byte; after edits, only the edited slides are rewritten and layouts, masters, media and the untouched slides are kept. Animations, transitions, SmartArt and charts are preserved in the package but not displayed.
 
 Reference for structure and styles: [Microsoft Learn — WordprocessingML paragraph styles](https://learn.microsoft.com/en-us/office/open-xml/word/how-to-create-and-add-a-paragraph-style-to-a-word-processing-document).
 

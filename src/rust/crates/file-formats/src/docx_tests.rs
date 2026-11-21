@@ -389,3 +389,21 @@ fn changed_comments_are_written_instead_of_the_original_package() {
     assert_eq!(reopened.comments[0].text, "Modifié");
     assert_eq!(reopened.comments[0].author, "Ana");
 }
+#[test]
+fn symbols_hyphens_and_double_strike_are_imported_and_editable() {
+    let mut parts = BTreeMap::new();
+    parts.insert("_rels/.rels".into(), "<Relationships><Relationship Id=\"r1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"word/document.xml\"/></Relationships>".into());
+    parts.insert("[Content_Types].xml".into(), "<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\"><Default Extension=\"xml\" ContentType=\"application/xml\"/></Types>".into());
+    parts.insert("word/document.xml".into(), format!("<w:document xmlns:w=\"{WORD}\"><w:body><w:p><w:r><w:sym w:font=\"Wingdings\" w:char=\"F0FC\"/><w:t xml:space=\"preserve\"> fait e</w:t><w:noBreakHyphen/><w:t>mail</w:t><w:softHyphen/></w:r><w:r><w:rPr><w:dstrike/><w:smallCaps/></w:rPr><w:t>X</w:t></w:r></w:p></w:body></w:document>"));
+    let bytes = write_package(None, parts, BTreeMap::new()).unwrap();
+    let mut doc = import(&bytes, "Sym").unwrap();
+    let p = &mut ps(&mut doc)[0];
+    assert_eq!(p.text, "✓ fait e\u{2011}mail\u{00AD}X");
+    let last = p.runs.last().unwrap();
+    assert!(last.style.strike);
+    p.text = "✓ fait e\u{2011}mail\u{00AD}X !".into();
+    let paragraphs = ps(&mut doc).clone();
+    let out = export(&doc, &paragraphs).unwrap();
+    let mut again = import(&out, "Sym").unwrap();
+    assert_eq!(ps(&mut again)[0].text, "✓ fait e\u{2011}mail\u{00AD}X !");
+}

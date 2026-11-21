@@ -56,3 +56,9 @@ Slides: `DuplicateSlide` (id), `MoveSlide` (id, index), `DuplicateObject` (slide
 Storage schema 4 protects page data against silent removal by older versions. Flat formats without this data stay in schema 2, or 3 when rich ranges are present. Older native files containing a DOCX source recover their paper format from the original package.
 
 Writer tables: `InsertParagraph` and `SetParagraph` accept `table`: `{rows, header}` where `rows` is a rectangular grid of strings (1 to 200 rows, 1 to 20 columns, 5,000 characters per cell) and `header` makes the first row a header. A table is its own paragraph: its text is empty, it has no image and it can be neither split nor merged. `null` removes the table. A document containing a table is saved in native schema 5.
+
+## Reusable Writer styles and Sheets fill
+
+`SetWriterStyles` (Writer only) accepts `styles: {name: TextStyle, ...}`. The complete map is validated (100 entries, nonempty names up to 48 characters, standard paragraph style limits). The `WriterStylesChanged` delta carries `styles`; Undo/Redo restores the library atomically. Native files containing personal styles use schema 6, which older readers reject. Empty libraries keep the lowest compatible schema. Applying a personal style uses the existing paragraph formatting commands; removing a style does not remove formatting already applied.
+
+`FillRange` (Sheets only) accepts a normalized rectangular `range` such as `A1:C20` and `direction`: `down`, `right`, `series_down` or `series_right`. Ordinary fill clones the first row/column, translates relative references and preserves anchors, strings and formatting. Series preserve the two input seeds and extend their difference. The range is bounded to 10,000 cells; invalid dimensions, seeds or shifted references reject the complete command before mutation. Its inverse is `RestoreCells`; recalculation and cell deltas use the normal Sheets path. No native schema change is required.

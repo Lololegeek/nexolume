@@ -1,0 +1,18 @@
+[package]
+name = "office-wasm"
+version = "0.1.0"
+edition = "2021"
+description = "WebAssembly (wasm-bindgen) host for the Nexolume document engine used by the browser build"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+office-ffi = { path = "../office-ffi" }
+command-system = { path = "../command-system" }
+document-core = { path = "../document-core" }
+serde_json.workspace = true
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+# Must match the wasm-bindgen CLI version used by scripts/build-web.ps1.
+wasm-bindgen = "=0.2.130"

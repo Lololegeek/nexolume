@@ -6,5 +6,5 @@ public sealed record SpellingResult(bool Available, IReadOnlyList<SpellingIssue>
 public sealed class SpellingService
 {
     // Each call owns and releases all its COM objects on the same background thread.
-    public Task<SpellingResult> CheckAsync(string text, string language) => Task.Run(() => WindowsSpelling.Check(text, language));
+    public Task<SpellingResult> CheckAsync(string text, string language) => Platform.AppPlatform.Current.CheckSpellingAsync(text, language);
 }

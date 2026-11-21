@@ -16,9 +16,8 @@ public partial class WriterView
     }
     public async Task ShowPageSetupAsync()
     {
-        if (TopLevel.GetTopLevel(this) is not Window owner) return;
         var dialog = new PageSetupDialog(PageSettings.Read(Document.Snapshot));
-        var settings = await dialog.ShowDialog<PageSettings?>(owner);
+        var settings = await dialog.ShowModalAsync<PageSettings?>(this);
         if (settings is not null) await Document.ExecuteAsync("SetPageLayout", settings.ToCommand());
     }
     public async Task ShowPrintPreviewAsync()
@@ -26,9 +25,8 @@ public partial class WriterView
         await FlushAsync(); if (LastError is not null) return;
         await Enqueue(async () =>
         {
-            if (TopLevel.GetTopLevel(this) is not Window owner) return;
             var preview = new PrintPreviewWindow(new WriterPrintLayout((System.Text.Json.Nodes.JsonObject)Document.Snapshot.DeepClone()), Document.Snapshot["office_source"] is not null);
-            await preview.ShowDialog(owner);
+            await preview.ShowModalAsync(this);
         });
     }
     private void RenderPageSettings()

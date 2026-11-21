@@ -15,12 +15,12 @@ public sealed class WritingOptions
     public Dictionary<string, List<string>> Dictionary { get; set; } = [];
     public Dictionary<string, string> Replacements { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public static WritingOptions Current { get; } = Load();
-    private static string FilePath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Nexolume", "writing.json");
     private static WritingOptions Load()
     {
         try
         {
-            var options = JsonSerializer.Deserialize<WritingOptions>(File.ReadAllText(FilePath)) ?? new();
+            if (Platform.AppPlatform.Current.ReadSetting("writing") is not { } json) return new();
+            var options = JsonSerializer.Deserialize<WritingOptions>(json) ?? new();
             options.Dictionary ??= [];
             if (options.SpellingLanguage is not ("fr-FR" or "en-US")) options.SpellingLanguage = "fr-FR";
             options.Replacements = (options.Replacements ?? []).Where(p => p.Key.Length <= 40 && !string.IsNullOrWhiteSpace(p.Value) && p.Value.Length <= 200).Take(100).ToDictionary(p => p.Key, p => p.Value);
@@ -32,9 +32,7 @@ public sealed class WritingOptions
     {
         try
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-            File.WriteAllText(FilePath + ".tmp", JsonSerializer.Serialize(this));
-            File.Move(FilePath + ".tmp", FilePath, true);
+            Platform.AppPlatform.Current.WriteSetting("writing", JsonSerializer.Serialize(this));
         }
         catch (Exception ex) { AppLog.Write(ex); }
     }

@@ -68,6 +68,16 @@ impl Session {
                 deltas,
             ));
         }
+        if c.command == "SetWriterStyles" {
+            if !matches!(self.document.content, Content::Writer { .. }) {
+                return Err("Personal styles require Writer".into());
+            }
+            let next = serde_json::from_value(c.params["styles"].clone()).map_err(|e| e.to_string())?;
+            writer_engine::validate_named_styles(&next)?;
+            let old = std::mem::replace(&mut self.document.writer_styles, next.clone());
+            return Ok((Command { command: c.command.clone(), params: json!({"styles":old}) },
+                vec![Delta::new("WriterStylesChanged", json!({"styles":next}))]));
+        }
         if c.command == "SetPageLayout" {
             if !matches!(self.document.content, Content::Writer { .. }) {
                 return Err("Page layout requires Writer".into());
@@ -283,8 +293,11 @@ impl Engine {
                 .as_str()
                 .ok_or_else(|| fail("Missing office file data"))?;
             let title = r.params["title"].as_str().unwrap_or("Document importé");
-            let doc =
+            let mut doc =
                 file_formats::import_office_base64(format, data, title).map_err(|e| fail(&e))?;
+            if doc.sheet_meta.as_ref().is_some_and(|m| validate_sheet_meta(m).is_err()) {
+                doc.sheet_meta = None;
+            }
             let result = json!({"protocol":1,"ok":true,"document":doc.id,"revision":doc.revision,"snapshot":doc,"changes":[]});
             self.documents.insert(
                 doc.id.clone(),

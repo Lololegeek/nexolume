@@ -5,9 +5,10 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Nexolume.Desktop.Editors.Slides.Controls;
 using System.Text.Json.Nodes;
+using Nexolume.Desktop.Platform;
 namespace Nexolume.Desktop.Editors.Slides.Views;
 
-public sealed class SlideshowWindow : Window
+public sealed class SlideshowWindow : DialogWindow
 {
     private readonly JsonArray slides;
     private readonly SlideSurface surface = new() { IsHitTestVisible = false };
@@ -15,17 +16,54 @@ public sealed class SlideshowWindow : Window
     private readonly TextBlock notes = new() { Foreground = Brushes.White, TextWrapping = TextWrapping.Wrap, MaxWidth = 900, HorizontalAlignment = HorizontalAlignment.Center, IsVisible = false, Margin = new Thickness(16, 0) };
     private readonly TranslateTransform shift = new();
     private Avalonia.Threading.DispatcherTimer? animation;
+    private readonly Border blank = new() { Name = "PresentationBlank", IsVisible = false };
+    private string requestedPage = "";
     public int SlideIndex { get; private set; }
     public bool NotesVisible => notes.IsVisible;
     public SlideshowWindow(JsonArray source, int start = 0)
     {
         Title = "Nexolume · Présentation"; Focusable = true; Opened += (_, _) => Focus(); slides = (JsonArray)source.DeepClone(); SlideIndex = Math.Clamp(start, 0, slides.Count - 1); WindowState = WindowState.FullScreen; Background = Brushes.Black;
-        surface.RenderTransform = shift; var grid = new Grid { RowDefinitions = new RowDefinitions("*,Auto,Auto") }; grid.Children.Add(new Viewbox { Stretch = Stretch.Uniform, Child = surface, Margin = new Thickness(0, 12) }); var bar = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Spacing = 18, Margin = new Thickness(16) };
+        surface.RenderTransform = shift; var grid = new Grid { RowDefinitions = new RowDefinitions("*,Auto,Auto") }; grid.Children.Add(new Viewbox { Stretch = Stretch.Uniform, Child = surface, Margin = new Thickness(0, 12) }); grid.Children.Add(blank); var bar = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Spacing = 18, Margin = new Thickness(16) };
         void Button(string text, Action action) { var button = new Button { Content = text }; button.Click += (_, _) => action(); bar.Children.Add(button); }
-        Button("← Précédente", () => Navigate(-1)); bar.Children.Add(label); Button("Suivante →", () => Navigate(1)); Button("Notes · N", ToggleNotes); Button("Quitter · Échap", Close); Grid.SetRow(notes, 1); grid.Children.Add(notes); Grid.SetRow(bar, 2); grid.Children.Add(bar); Content = grid;
-        AddHandler(KeyDownEvent, (_, e) => { switch (e.Key) { case Key.Escape: Close(); break; case Key.N: ToggleNotes(); break; case Key.Right: case Key.Space: case Key.PageDown: case Key.Enter: Navigate(1); break; case Key.Left: case Key.PageUp: Navigate(-1); break; case Key.Home: SlideIndex = 0; Render(); break; case Key.End: SlideIndex = slides.Count - 1; Render(); break; default: return; } e.Handled = true; }, Avalonia.Interactivity.RoutingStrategies.Tunnel); Render();
+        Button("← Précédente", () => Navigate(-1)); bar.Children.Add(label); Button("Suivante →", () => Navigate(1)); Button("Notes · N", ToggleNotes); Button("Noir · B", () => ToggleBlank(false)); Button("Quitter · Échap", Close); Grid.SetRow(notes, 1); grid.Children.Add(notes); Grid.SetRow(bar, 2); grid.Children.Add(bar); Content = grid;
+        ToolTip.SetTip(label, "Tapez un numéro puis Entrée pour atteindre une diapositive. B : écran noir ; W : écran blanc.");
+        AddHandler(KeyDownEvent, (_, e) =>
+        {
+            if (e.Key is >= Key.D0 and <= Key.D9 || e.Key is >= Key.NumPad0 and <= Key.NumPad9)
+            {
+                var digit = e.Key >= Key.NumPad0 ? e.Key - Key.NumPad0 : e.Key - Key.D0;
+                if (requestedPage.Length < 5) requestedPage += digit;
+                label.Text = "Aller à " + requestedPage + " · Entrée"; e.Handled = true; return;
+            }
+            switch (e.Key)
+            {
+                case Key.Escape: Close(); break;
+                case Key.B: ToggleBlank(false); break;
+                case Key.W: ToggleBlank(true); break;
+                case Key.N: ToggleNotes(); break;
+                case Key.Back when requestedPage.Length > 0: requestedPage = requestedPage[..^1]; label.Text = "Aller à " + requestedPage + " · Entrée"; break;
+                case Key.Enter when requestedPage.Length > 0:
+                    var number = int.Parse(requestedPage); requestedPage = "";
+                    if (number >= 1 && number <= slides.Count) { SlideIndex = number - 1; Render(); }
+                    else label.Text = $"Numéro entre 1 et {slides.Count}";
+                    break;
+                case Key.Right: case Key.Space: case Key.PageDown: case Key.Enter: Navigate(1); break;
+                case Key.Left: case Key.PageUp: Navigate(-1); break;
+                case Key.Home: SlideIndex = 0; Render(); break;
+                case Key.End: SlideIndex = slides.Count - 1; Render(); break;
+                default: return;
+            }
+            e.Handled = true;
+        }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        Closed += (_, _) => animation?.Stop(); Render();
     }
     public void ToggleNotes() { notes.IsVisible = !notes.IsVisible; }
+    private void ToggleBlank(bool white)
+    {
+        var brush = white ? Brushes.White : Brushes.Black;
+        if (blank.IsVisible && blank.Background == brush) blank.IsVisible = false;
+        else { blank.Background = brush; blank.IsVisible = true; }
+    }
     public void Navigate(int delta)
     {
         var next = Math.Clamp(SlideIndex + delta, 0, slides.Count - 1); var moved = next != SlideIndex; SlideIndex = next; Render();
@@ -46,5 +84,5 @@ public sealed class SlideshowWindow : Window
         if (transition == "fade") surface.Opacity = 0; else shift.X = (direction >= 0 ? 1 : -1) * 240;
         animation.Start();
     }
-    private void Render() { var slide = slides[SlideIndex]!; surface.Objects = slide["objects"]!.AsArray(); surface.Background = slide["background"]?.GetValue<string>() ?? "#FFFFFF"; notes.Text = slide["notes"]?.GetValue<string>() is { Length: > 0 } text ? text : "Aucune note pour cette diapositive."; surface.InvalidateVisual(); label.Text = $"{SlideIndex + 1} / {slides.Count}"; }
+    private void Render() { animation?.Stop(); surface.Opacity = 1; shift.X = 0; requestedPage = ""; blank.IsVisible = false; var slide = slides[SlideIndex]!; surface.Objects = slide["objects"]!.AsArray(); surface.Background = slide["background"]?.GetValue<string>() ?? "#FFFFFF"; notes.Text = slide["notes"]?.GetValue<string>() is { Length: > 0 } text ? text : "Aucune note pour cette diapositive."; surface.InvalidateVisual(); label.Text = $"{SlideIndex + 1} / {slides.Count}"; }
 }
