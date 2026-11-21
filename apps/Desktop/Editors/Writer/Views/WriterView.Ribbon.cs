@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Media;
 using System.Text.Json.Nodes;
+using Nexolume.Desktop.DesignSystem.Controls;
 namespace Nexolume.Desktop.Editors.Writer.Views;
 
 public partial class WriterView
@@ -12,8 +13,8 @@ public partial class WriterView
         {
             foreach (var name in new[] { "Home", "Insert", "Layout", "Review", "View" }) { this.FindControl<Grid>(name + "Ribbon")!.IsVisible = name == key; this.FindControl<Button>(name + "RibbonTab")!.Classes.Set("selected", name == key); }
         };
-        var family = this.FindControl<ComboBox>("FontFamilyBox")!; SetupFonts();
-        family.SelectionChanged += async (_, _) => { if (!updatingFont && family.SelectedItem is string font && !IsFontMarker(font)) { RememberFont(font); await ChangeStyleAsync(style => style["font_family"] = font); } };
+        SetupFonts();
+        this.FindControl<FontPicker>("FontFamilyBox")!.FontChosen += async font => { RememberFont(font); await ChangeStyleAsync(style => style["font_family"] = font); };
         var size = this.FindControl<NumericUpDown>("FontSizeBox")!;
         size.ValueChanged += async (_, _) => { if (!updatingFont && size.Value is { } value) await ChangeStyleAsync(style => style["font_size"] = (double)value * 4 / 3); };
         foreach (var (name, value) in new[] { ("AlignLeftButton", "left"), ("AlignCenterButton", "center"), ("AlignRightButton", "right") }) this.FindControl<Button>(name)!.Click += async (_, _) => await ChangeStyleAsync(style => style["alignment"] = value);
@@ -28,7 +29,7 @@ public partial class WriterView
         SetupOfficeTools();
         var ruler = this.FindControl<CheckBox>("RulerToggle")!; ruler.IsCheckedChanged += (_, _) => this.FindControl<Border>("PageRuler")!.IsVisible = ruler.IsChecked == true;
     }
-    private void UpdateFontInputs(JsonNode style) { updatingFont = true; try { var font = style["font_family"]!.GetValue<string>(); var fonts = this.FindControl<ComboBox>("FontFamilyBox")!; if (fonts.ItemsSource is not List<string> known || !known.Contains(font)) RefreshFontList(font); fonts.SelectedItem = font; this.FindControl<NumericUpDown>("FontSizeBox")!.Value = (decimal)(style["font_size"]!.GetValue<double>() * 3 / 4); UpdateOfficeInputs(style); } finally { updatingFont = false; } }
+    private void UpdateFontInputs(JsonNode style) { updatingFont = true; try { var font = style["font_family"]!.GetValue<string>(); this.FindControl<FontPicker>("FontFamilyBox")!.SelectedFont = font; this.FindControl<NumericUpDown>("FontSizeBox")!.Value = (decimal)(style["font_size"]!.GetValue<double>() * 3 / 4); UpdateOfficeInputs(style); } finally { updatingFont = false; } }
     private async Task ChangeStyleAsync(Action<JsonNode> change, bool wholeParagraph = false)
     {
         if (multi is not null) { await ChangeStyleMultiAsync(change, wholeParagraph); return; }

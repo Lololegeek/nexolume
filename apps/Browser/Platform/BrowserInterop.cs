@@ -20,5 +20,6 @@ internal static partial class BrowserInterop
     [JSImport("localFontsSupported", ModuleName)] public static partial bool LocalFontsSupported();
     [JSImport("localFontsPermission", ModuleName)] public static partial Task<string> LocalFontsPermission();
     [JSImport("listLocalFonts", ModuleName)] public static partial Task<string> ListLocalFonts();
+    [JSImport("loadBundledFonts", ModuleName)] public static partial Task<string> LoadBundledFonts(string filesJson);
     [JSImport("loadLocalFontFamily", ModuleName)] public static partial Task<string> LoadLocalFontFamily(string family);
 }

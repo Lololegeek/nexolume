@@ -132,6 +132,18 @@ export async function loadLocalFontFamily(family) {
   return JSON.stringify(files);
 }
 
+// Fonts shipped with the app (wwwroot/fonts): same JSON format, fetched from this site only.
+export async function loadBundledFonts(files) {
+  const result = [];
+  for (const file of JSON.parse(files)) {
+    try {
+      const response = await fetch(new URL('fonts/' + file, import.meta.url));
+      if (response.ok) result.push(await base64Of(await response.blob()));
+    } catch { /* missing file: the family keeps the fallback font */ }
+  }
+  return JSON.stringify(result);
+}
+
 export function logError(message) {
   console.error('[Nexolume]', message);
 }

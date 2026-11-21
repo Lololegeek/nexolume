@@ -13,6 +13,8 @@ public static class DeviceFonts
     public static event Action? Changed;
     /// <summary>Family names reported by the device, sorted. Empty until allowed (browser) or on desktop.</summary>
     public static IReadOnlyList<string> Families { get; private set; } = [];
+    /// <summary>Fonts shipped with the web version (open fonts with the metrics of Calibri, Cambria, Arial, Times New Roman and Courier New), under the names documents use.</summary>
+    public static IReadOnlyList<string> Bundled { get; set; } = [];
     /// <summary>The browser can list device fonts but the user has not allowed it yet.</summary>
     public static bool CanRequest => requester is not null && Families.Count == 0;
     /// <summary>Device fonts are out of reach (browser without the Local Font Access API, or permission denied).</summary>

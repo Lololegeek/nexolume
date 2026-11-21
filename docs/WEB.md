@@ -112,7 +112,7 @@ node scripts/serve-web.mjs artifacts/web 8080
 |---|---|
 | Vercel | Deploy `artifacts/web`. The included `vercel.json` sets the headers and cache rules. |
 | Netlify / Cloudflare Pages | Deploy `artifacts/web`. The included `_headers` file is used. |
-| GitHub Pages | Workflow `.github/workflows/web-pages.yml`, run on every push to `main` (or manually). It publishes the landing page `site/` at the root and the app under `app/`. `.nojekyll` and `404.html` are included. Paths are relative, so a project sub-path (`/user.github.io/repo/`) works. |
+| GitHub Pages | The public site lives in the [nexolume-site](https://github.com/Lololegeek/nexolume-site) repository. Its Pages workflow checks out this repository, runs `scripts/build-web.ps1 -Configuration Release` and serves the app under `app/` (https://lololegeek.github.io/nexolume-site/app/). Paths are relative, so any sub-path works. |
 | nginx | `deploy/nginx.conf`: MIME types, gzip, immutable caching for `_framework`. |
 
 ## Tests
