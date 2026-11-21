@@ -25,6 +25,9 @@
          WebAssembly SDK disables reflection-based System.Text.Json in every configuration; partial
          trimming (Release) keeps the app assemblies whole, so reflection stays valid. -->
     <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
+    <!-- Device fonts (Platform/BrowserFonts.cs) build glyph typefaces from files: that API is internal in Avalonia 11. The version above is pinned. -->
+    <AvaloniaAccessUnstablePrivateApis>true</AvaloniaAccessUnstablePrivateApis>
+    <NoWarn>$(NoWarn);AVA3001</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <RunAOTCompilation>false</RunAOTCompilation>

@@ -58,5 +58,31 @@
 <Style Selector="ScrollViewer#PageScroll ScrollBar"><Setter Property="AllowAutoHide" Value="False"/></Style>
 <Style Selector="Button:focus-visible /template/ ContentPresenter"><Setter Property="BorderBrush" Value="{DynamicResource OfficeAccent}"/><Setter Property="BorderThickness" Value="2"/></Style>
 <Style Selector="Border.ribbon Button:disabled"><Setter Property="Opacity" Value="0.45"/></Style>
+<!-- Selectors: rounded fields, a floating list with a soft shadow and roomy, rounded rows. -->
+<Style Selector="ComboBox"><Setter Property="CornerRadius" Value="6"/><Setter Property="Cursor" Value="Hand"/></Style>
+<Style Selector="ComboBox:pointerover /template/ Border#Background"><Setter Property="BorderBrush" Value="{DynamicResource OfficeAccent}"/></Style>
+<Style Selector="ComboBox:focus-within /template/ Border#Background"><Setter Property="BorderBrush" Value="{DynamicResource OfficeAccent}"/></Style>
+<Style Selector="ComboBox /template/ Border#PopupBorder"><Setter Property="Background" Value="{DynamicResource OfficePanel}"/><Setter Property="BorderBrush" Value="{DynamicResource OfficeLine}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="8"/><Setter Property="Padding" Value="4"/><Setter Property="Margin" Value="0,4,0,8"/><Setter Property="BoxShadow" Value="0 8 24 0 #30000000"/></Style>
+<Style Selector="ComboBoxItem"><Setter Property="Padding" Value="10,4"/><Setter Property="Margin" Value="0,1"/><Setter Property="CornerRadius" Value="5"/><Setter Property="Foreground" Value="{DynamicResource OfficeInk}"/></Style>
+<Style Selector="ComboBoxItem /template/ ContentPresenter"><Setter Property="CornerRadius" Value="5"/></Style>
+<Style Selector="ComboBoxItem:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource OfficeHover}"/><Setter Property="Foreground" Value="{DynamicResource OfficeInk}"/></Style>
+<Style Selector="ComboBoxItem:selected /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource OfficeAccentSoft}"/><Setter Property="Foreground" Value="{DynamicResource OfficeInk}"/></Style>
+<Style Selector="ComboBoxItem:selected:pointerover /template/ ContentPresenter"><Setter Property="Background" Value="{DynamicResource OfficePressed}"/></Style>
+<Style Selector="ComboBoxItem.fontHeader"><Setter Property="Padding" Value="10,2"/><Setter Property="Cursor" Value="Arrow"/></Style>
+<Style Selector="ComboBoxItem.fontHeader /template/ ContentPresenter"><Setter Property="Background" Value="Transparent"/></Style>
+<Style Selector="ComboBoxItem.fontHeader:disabled /template/ ContentPresenter"><Setter Property="Foreground" Value="{DynamicResource OfficeMuted}"/><Setter Property="Background" Value="Transparent"/></Style>
+<Style Selector="ComboBoxItem.fontHeader:disabled"><Setter Property="Opacity" Value="1"/></Style>
+<Style Selector="NumericUpDown"><Setter Property="CornerRadius" Value="6"/></Style>
+<Style Selector="TextBox"><Setter Property="CornerRadius" Value="6"/></Style>
+<Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement"><Setter Property="BorderBrush" Value="{DynamicResource OfficeAccent}"/></Style>
+<Style Selector="CheckBox"><Setter Property="Cursor" Value="Hand"/></Style>
+<Style Selector="CheckBox /template/ Border#NormalRectangle"><Setter Property="CornerRadius" Value="4"/></Style>
+<Style Selector="ToggleSwitch"><Setter Property="Cursor" Value="Hand"/></Style>
+<Style Selector="ToolTip"><Setter Property="Background" Value="{DynamicResource OfficePanel}"/><Setter Property="Foreground" Value="{DynamicResource OfficeInk}"/><Setter Property="BorderBrush" Value="{DynamicResource OfficeLine}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="6"/><Setter Property="Padding" Value="10,6"/></Style>
+<Style Selector="ContextMenu, MenuFlyoutPresenter"><Setter Property="Background" Value="{DynamicResource OfficePanel}"/><Setter Property="BorderBrush" Value="{DynamicResource OfficeLine}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="CornerRadius" Value="8"/><Setter Property="Padding" Value="4"/></Style>
+<Style Selector="MenuItem"><Setter Property="CornerRadius" Value="5"/><Setter Property="Padding" Value="10,6"/></Style>
+<Style Selector="MenuItem /template/ Border#PART_LayoutRoot"><Setter Property="CornerRadius" Value="5"/></Style>
+<Style Selector="MenuItem:pointerover /template/ Border#PART_LayoutRoot"><Setter Property="Background" Value="{DynamicResource OfficeHover}"/></Style>
+<Style Selector="FlyoutPresenter"><Setter Property="CornerRadius" Value="8"/><Setter Property="BorderBrush" Value="{DynamicResource OfficeLine}"/></Style>
 <Style Selector="Border.pageSheet"><Setter Property="CornerRadius" Value="3"/><Setter Property="BoxShadow" Value="0 1 2 0 #30000000, 0 10 28 0 #38000000"/></Style>
 </Styles>

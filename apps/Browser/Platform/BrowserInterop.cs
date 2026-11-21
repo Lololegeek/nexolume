@@ -17,4 +17,8 @@ internal static partial class BrowserInterop
     [JSImport("printPdf", ModuleName)] public static partial void PrintPdf(string title, [JSMarshalAs<JSType.MemoryView>] ArraySegment<byte> bytes);
     [JSImport("setFullScreen", ModuleName)] public static partial void SetFullScreen(bool fullScreen);
     [JSImport("logError", ModuleName)] public static partial void LogError(string message);
+    [JSImport("localFontsSupported", ModuleName)] public static partial bool LocalFontsSupported();
+    [JSImport("localFontsPermission", ModuleName)] public static partial Task<string> LocalFontsPermission();
+    [JSImport("listLocalFonts", ModuleName)] public static partial Task<string> ListLocalFonts();
+    [JSImport("loadLocalFontFamily", ModuleName)] public static partial Task<string> LoadLocalFontFamily(string family);
 }

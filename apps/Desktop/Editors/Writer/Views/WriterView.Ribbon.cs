@@ -13,7 +13,7 @@ public partial class WriterView
             foreach (var name in new[] { "Home", "Insert", "Layout", "Review", "View" }) { this.FindControl<Grid>(name + "Ribbon")!.IsVisible = name == key; this.FindControl<Button>(name + "RibbonTab")!.Classes.Set("selected", name == key); }
         };
         var family = this.FindControl<ComboBox>("FontFamilyBox")!; SetupFonts();
-        family.SelectionChanged += async (_, _) => { if (!updatingFont && family.SelectedItem is string font) { RememberFont(font); await ChangeStyleAsync(style => style["font_family"] = font); } };
+        family.SelectionChanged += async (_, _) => { if (!updatingFont && family.SelectedItem is string font && !IsFontMarker(font)) { RememberFont(font); await ChangeStyleAsync(style => style["font_family"] = font); } };
         var size = this.FindControl<NumericUpDown>("FontSizeBox")!;
         size.ValueChanged += async (_, _) => { if (!updatingFont && size.Value is { } value) await ChangeStyleAsync(style => style["font_size"] = (double)value * 4 / 3); };
         foreach (var (name, value) in new[] { ("AlignLeftButton", "left"), ("AlignCenterButton", "center"), ("AlignRightButton", "right") }) this.FindControl<Button>(name)!.Click += async (_, _) => await ChangeStyleAsync(style => style["alignment"] = value);

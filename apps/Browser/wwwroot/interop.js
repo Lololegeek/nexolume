@@ -82,6 +82,56 @@ export function setFullScreen(value) {
   } catch { /* full screen refused: the slideshow still fills the page */ }
 }
 
+// Device fonts (Local Font Access API, Chrome/Edge). The files are read from the device, never sent anywhere.
+const deviceFonts = new Map(); // family -> FontData[]
+
+export function localFontsSupported() {
+  return typeof window.queryLocalFonts === 'function';
+}
+
+// "granted", "prompt", "denied" or "unsupported".
+export async function localFontsPermission() {
+  if (!localFontsSupported()) return 'unsupported';
+  try { return (await navigator.permissions.query({ name: 'local-fonts' })).state; } catch { return 'prompt'; }
+}
+
+// Lists the families as JSON. Shows the browser's permission prompt the first time (needs a recent click).
+export async function listLocalFonts() {
+  if (!localFontsSupported()) return '';
+  try {
+    const faces = await window.queryLocalFonts();
+    deviceFonts.clear();
+    for (const face of faces) {
+      if (!face.family) continue;
+      if (!deviceFonts.has(face.family)) deviceFonts.set(face.family, []);
+      deviceFonts.get(face.family).push(face);
+    }
+    return JSON.stringify([...deviceFonts.keys()].sort((a, b) => a.localeCompare(b)));
+  } catch {
+    return '';
+  }
+}
+
+function base64Of(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).slice(String(reader.result).indexOf(',') + 1));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
+// Returns the faces of a family as a JSON array of base64 font files ("" when unknown).
+export async function loadLocalFontFamily(family) {
+  const faces = deviceFonts.get(family);
+  if (!faces) return '';
+  const files = [];
+  for (const face of faces.slice(0, 24)) {
+    try { files.push(await base64Of(await face.blob())); } catch { /* unreadable face: skip it */ }
+  }
+  return JSON.stringify(files);
+}
+
 export function logError(message) {
   console.error('[Nexolume]', message);
 }

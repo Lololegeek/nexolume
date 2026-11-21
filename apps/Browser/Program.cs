@@ -17,6 +17,8 @@ internal static partial class Program
             await BrowserOfficeTransport.LoadAsync("../engine/nexolume-engine.js");
             await BuildAvaloniaApp().WithInterFont().StartBrowserAppAsync("out");
             Ready();
+            try { await Platform.BrowserFontCollection.InstallAsync(); }
+            catch (Exception ex) { Services.AppLog.Write(ex); }
         }
         catch (Exception ex) { Services.AppLog.Write(ex); Failed(ex.Message); throw; }
     }
